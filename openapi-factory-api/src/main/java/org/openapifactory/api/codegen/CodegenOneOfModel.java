@@ -9,6 +9,7 @@ import java.util.Map;
 @Data
 @EqualsAndHashCode(callSuper = true)
 public class CodegenOneOfModel extends CodegenModel {
+    private final String name;
     @Data
     public static class Discriminator {
         private String propertyName;

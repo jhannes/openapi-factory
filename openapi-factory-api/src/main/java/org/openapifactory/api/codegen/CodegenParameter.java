@@ -1,7 +1,6 @@
 package org.openapifactory.api.codegen;
 
 import lombok.Data;
-import lombok.Getter;
 
 @Data
 public class CodegenParameter implements CodegenProp {
@@ -12,7 +11,7 @@ public class CodegenParameter implements CodegenProp {
         deepObject, form, label, matrix, pipeDelimited, simple, spaceDelimited
     }
 
-    private String name;
+    private final String name;
     private boolean required;
     private CodegenType type;
     private ParameterLocation in;

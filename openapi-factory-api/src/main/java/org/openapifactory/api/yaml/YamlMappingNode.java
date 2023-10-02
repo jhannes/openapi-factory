@@ -46,7 +46,7 @@ public class YamlMappingNode implements SpecMappingNode {
         try (var reader = Files.newBufferedReader(path)) {
             var composer =
                     new Composer(new ParserImpl(new StreamReader(reader), new LoaderOptions()), new Resolver(), new LoaderOptions());
-            return new YamlMappingNode(List.of(), (MappingNode) composer.getSingleNode());
+            return new YamlMappingNode(List.of(), composer.getSingleNode());
         }
     }
 

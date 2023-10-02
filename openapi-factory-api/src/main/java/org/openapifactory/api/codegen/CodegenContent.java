@@ -4,9 +4,9 @@ import lombok.Data;
 
 @Data
 public class CodegenContent implements CodegenProp {
+    private final String contentType;
     private CodegenType type;
     private boolean required;
-    private String contentType;
 
     @Override
     public String getName() {

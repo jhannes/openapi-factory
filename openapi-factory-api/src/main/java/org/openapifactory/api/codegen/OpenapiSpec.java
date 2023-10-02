@@ -13,6 +13,7 @@ import java.util.TreeSet;
 
 @Data
 public class OpenapiSpec {
+    private final String modelSuffix = "Dto";
     private String name, title, description, version;
     private Optional<CodegenContact> contact = Optional.empty();
 
@@ -31,5 +32,32 @@ public class OpenapiSpec {
 
     public void addOperation(String tag, CodegenOperation codegenOperation) {
         apiMap.computeIfAbsent(tag, CodegenApi::new).addOperation(codegenOperation);
+    }
+
+    public CodegenServer addServer() {
+        var server = new CodegenServer();
+        servers.add(server);
+        return server;
+    }
+
+    public CodegenGenericModel addGenericModel(String modelName) {
+        return addModel(new CodegenGenericModel(modelName + modelSuffix));
+    }
+
+    public CodegenEnumModel addEnumModel(String modelName) {
+        return addModel(new CodegenEnumModel(modelName + modelSuffix));
+    }
+
+    public CodegenOneOfModel addOneOfModel(String modelName) {
+        return addModel(new CodegenOneOfModel(modelName + modelSuffix));
+    }
+
+    private <T extends CodegenModel> T addModel(T model) {
+        modelMap.put(model.getName(), model);
+        return model;
+    }
+
+    public CodegenOperation createOperation(String method, String path) {
+        return new CodegenOperation(method, path);
     }
 }
