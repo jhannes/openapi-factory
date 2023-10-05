@@ -24,7 +24,7 @@ export interface DiscoveryDocumentDto {
     response_modes_supported?: Set<DiscoveryDocumentDtoResponseModesSupportedEnum>;
     subject_types_supported?: Set<DiscoveryDocumentDtoSubjectTypesSupportedEnum>;
     code_challenge_methods_supported?: Set<DiscoveryDocumentDtoCodeChallengeMethodsSupportedEnum>;
-    id_token_signing_alg_values_supported?: Array<DiscoveryDocumentDtoIdTokenSigningAlgValuesSupportedEnum>;
+    id_token_signing_alg_values_supported?: Array<"RS256">;
     x_sso_frame?: string;
 }
 
@@ -49,12 +49,6 @@ export const DiscoveryDocumentDtoCodeChallengeMethodsSupportedEnumValues = [
 ] as const;
 
 export type DiscoveryDocumentDtoCodeChallengeMethodsSupportedEnum = typeof DiscoveryDocumentDtoCodeChallengeMethodsSupportedEnumValues[number];
-
-export const DiscoveryDocumentDtoIdTokenSigningAlgValuesSupportedEnumValues = [
-    "RS256",
-] as const;
-
-export type DiscoveryDocumentDtoIdTokenSigningAlgValuesSupportedEnum = typeof DiscoveryDocumentDtoIdTokenSigningAlgValuesSupportedEnumValues[number];
 export const GrantTypeDtoValues = [
     "implicit",
     "authorization_code",

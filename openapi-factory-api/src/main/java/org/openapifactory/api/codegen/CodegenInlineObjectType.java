@@ -2,15 +2,14 @@ package org.openapifactory.api.codegen;
 
 
 import lombok.Data;
-import lombok.EqualsAndHashCode;
+import org.openapifactory.api.Maybe;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
 
 @Data
-@EqualsAndHashCode(callSuper = false)
-public class CodegenInlineObjectType extends CodegenType implements CodegenPropertyMap {
-    private String declaredType, declaredProperty;
+public class CodegenInlineObjectType implements CodegenType, CodegenPropertyMap, CodegenPropertyModel {
+    private String name;
     private final Map<String, CodegenProperty> properties = new LinkedHashMap<>();
 
     @Override
@@ -20,7 +19,10 @@ public class CodegenInlineObjectType extends CodegenType implements CodegenPrope
 
     @Override
     public String getName() {
-        throw new UnsupportedOperationException("Can't find name of inline object");
+        if (name == null) {
+            throw new UnsupportedOperationException("Can't find name of inline object");
+        }
+        return name;
     }
 
     @Override
@@ -28,5 +30,10 @@ public class CodegenInlineObjectType extends CodegenType implements CodegenPrope
         var property = new CodegenProperty(name);
         properties.put(name, property);
         return property;
+    }
+
+    @Override
+    public Maybe<CodegenProperty> getProperty(String name) {
+        return Maybe.ofNullable(properties.get(name), "Missing " + name);
     }
 }

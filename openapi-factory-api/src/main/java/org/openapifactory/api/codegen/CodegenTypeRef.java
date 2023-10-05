@@ -1,14 +1,11 @@
 package org.openapifactory.api.codegen;
 
-import lombok.AllArgsConstructor;
 import lombok.Data;
-import lombok.EqualsAndHashCode;
 
 import java.util.regex.Pattern;
 
 @Data
-@EqualsAndHashCode(callSuper = false)
-public class CodegenTypeRef extends CodegenType {
+public class CodegenTypeRef implements CodegenType {
     private final String ref;
 
     public CodegenTypeRef(String ref) {

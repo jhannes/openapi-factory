@@ -331,16 +331,16 @@ export class TestSampleData {
         if (typeof this.sampleModelProperties[containerClass] === "function") {
             return this.sampleModelProperties[containerClass](this);
         }
-        const type = this.pickOneString(["organization", "person"])
+        const type = this.pickOneString(["person", "organization"])
         switch (type) {
-            case "organization":
-                return {
-                    ...this.sampleOrganizationDto(),
-                    type,
-                };
             case "person":
                 return {
                     ...this.samplePersonDto(),
+                    type,
+                };
+            case "organization":
+                return {
+                    ...this.sampleOrganizationDto(),
                     type,
                 };
         }
@@ -366,26 +366,26 @@ export class TestSampleData {
         if (typeof this.sampleModelProperties[containerClass] === "function") {
             return this.sampleModelProperties[containerClass](this);
         }
-        const code = this.pickOneString(["duplicateIdentifier", "generalError", "illegalAddress", "networkError"])
+        const code = this.pickOneString(["generalError", "networkError", "duplicateIdentifier", "illegalAddress"])
         switch (code) {
-            case "duplicateIdentifier":
-                return {
-                    ...this.sampleDuplicateIdentifierErrorDto(),
-                    code,
-                };
             case "generalError":
                 return {
                     ...this.sampleGeneralErrorDto(),
                     code,
                 };
-            case "illegalAddress":
-                return {
-                    ...this.sampleIllegalEmailAddressErrorDto(),
-                    code,
-                };
             case "networkError":
                 return {
                     ...this.sampleGeneralErrorDto(),
+                    code,
+                };
+            case "duplicateIdentifier":
+                return {
+                    ...this.sampleDuplicateIdentifierErrorDto(),
+                    code,
+                };
+            case "illegalAddress":
+                return {
+                    ...this.sampleIllegalEmailAddressErrorDto(),
                     code,
                 };
         }
@@ -684,21 +684,11 @@ export class TestSampleData {
         if (typeof this.sampleModelProperties[containerClass] === "function") {
             return this.sampleModelProperties[containerClass](this);
         }
-        const code = this.pickOneString(["duplicateIdentifier", "generalError", "illegalAddress", "networkError", "notFound"])
+        const code = this.pickOneString(["generalError", "networkError", "notFound", "duplicateIdentifier", "illegalAddress"])
         switch (code) {
-            case "duplicateIdentifier":
-                return {
-                    ...this.sampleDuplicateIdentifierErrorDto(),
-                    code,
-                };
             case "generalError":
                 return {
                     ...this.sampleGeneralErrorDto(),
-                    code,
-                };
-            case "illegalAddress":
-                return {
-                    ...this.sampleIllegalEmailAddressErrorDto(),
                     code,
                 };
             case "networkError":
@@ -709,6 +699,16 @@ export class TestSampleData {
             case "notFound":
                 return {
                     ...this.sampleNotFoundErrorDto(),
+                    code,
+                };
+            case "duplicateIdentifier":
+                return {
+                    ...this.sampleDuplicateIdentifierErrorDto(),
+                    code,
+                };
+            case "illegalAddress":
+                return {
+                    ...this.sampleIllegalEmailAddressErrorDto(),
                     code,
                 };
         }

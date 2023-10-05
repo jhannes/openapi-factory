@@ -9,6 +9,7 @@ import org.openapifactory.api.codegen.CodegenParameter;
 import org.openapifactory.api.codegen.CodegenPrimitiveType;
 import org.openapifactory.api.codegen.CodegenProp;
 import org.openapifactory.api.codegen.CodegenPropertyMap;
+import org.openapifactory.api.codegen.CodegenRecordType;
 import org.openapifactory.api.codegen.CodegenType;
 import org.openapifactory.api.codegen.CodegenTypeRef;
 import org.openapifactory.api.codegen.OpenapiSpec;
@@ -67,16 +68,32 @@ public class OpenapiSpecParser {
         } else if (node.containsKey("enum")) {
             var enumModel = spec.addEnumModel(modelName);
             enumModel.getValues().addAll(node.sequenceNode("enum").required().stringList());
+        } else if (node.containsKey("allOf")) {
+            var allOf = spec.addAllOfModel(modelName);
+            allOf.getRequired().addAll(node.sequenceNode("required")
+                    .map(SpecSequenceNode::stringList)
+                    .orElse(Set.of()));
+            for (var superModel : node.sequenceNode("allOf").required().mappingNodes()) {
+                if (superModel.containsKey("$ref")) {
+                    allOf.addRefSuperModel(superModel.string("$ref").required());
+                } else if (superModel.containsKey("properties")) {
+                    readProperties(superModel, allOf.addSuperModel());
+                }
+            }
         } else if (node.containsKey("oneOf")) {
             var oneOf = spec.addOneOfModel(modelName);
-            var discriminatorNode = node.mappingNode("discriminator").required();
-            oneOf.getDiscriminator().setPropertyName(discriminatorNode.string("propertyName").orNull());
-            var mapping = discriminatorNode.mappingNode("mapping").required();
-            for (var mappingKey : mapping.keySet()) {
-                oneOf.getDiscriminator().getMapping().put(
-                        mappingKey,
-                        new CodegenTypeRef(mapping.string(mappingKey).required())
-                );
+            for (var oneOfNode : node.sequenceNode("oneOf").required().mappingNodes()) {
+                oneOf.addOneOf(oneOfNode.string("$ref").required());
+            }
+            if (node.containsKey("discriminator")) {
+                var discriminatorNode = node.mappingNode("discriminator").required();
+                oneOf.getDiscriminator().setPropertyName(discriminatorNode.string("propertyName").orNull());
+                if (discriminatorNode.containsKey("mapping")) {
+                    var mapping = discriminatorNode.mappingNode("mapping").required();
+                    for (var mappingKey : mapping.keySet()) {
+                        oneOf.addMapping(mappingKey, mapping.string(mappingKey).required());
+                    }
+                }
             }
         } else {
             throw new IllegalArgumentException("Unsupported model " + modelName + ": " + node);
@@ -90,7 +107,9 @@ public class OpenapiSpecParser {
         var properties = node.mappingNode("properties").required();
         for (var name : properties.keySet()) {
             var codegen = model.addProperty(name);
-            codegen.setRequired(required.contains(name));
+            if (required.contains(name)) {
+                codegen.setRequired(true);
+            }
             var propNode = properties.mappingNode(name).required();
             codegen.setDescription(propNode.string("description").orNull());
             codegen.setExample(propNode.string("example").orNull());
@@ -163,30 +182,34 @@ public class OpenapiSpecParser {
         if ($ref.isPresent()) {
             return new CodegenTypeRef($ref.required());
         }
-        var type = schema.string("type").orElse("string");
-        if ("array".equals(type)) {
-            var result = new CodegenArrayType();
-            result.setUniqueItems(schema.getBoolean("uniqueItems").orElse(false));
-            result.setItems(getType(schema.mappingNode("items").required(), model, prop));
-            return result;
-        } else if (schema.containsKey("enum")) {
+        if (schema.containsKey("enum")) {
             var result = new CodegenInlineEnumType();
-            result.setType(type);
+            result.setType(schema.string("type").orElse("string"));
             result.getValues().addAll(schema.sequenceNode("enum").required().stringList());
-            result.setDeclaredType(model.getName());
-            result.setDeclaredProperty(prop.getName());
+            result.setDeclaredModel(model);
+            result.setDeclaredProperty(prop);
             return result;
         } else if (schema.containsKey("properties")) {
             var result = new CodegenInlineObjectType();
-            result.setDeclaredType(null);
-            result.setDeclaredProperty(null);
             readProperties(schema, result);
             return result;
-        } else {
-            var result = new CodegenPrimitiveType();
-            result.setType(type);
-            result.setFormat(schema.string("format").orNull());
+        } else if (schema.containsKey("additionalProperties")) {
+            var result = new CodegenRecordType();
+            result.setAdditionalProperties(getType(schema.mappingNode("additionalProperties").required(), model, prop));
             return result;
+        } else {
+            var type = schema.string("type").required();
+            if ("array".equals(type)) {
+                var result = new CodegenArrayType();
+                result.setUniqueItems(schema.getBoolean("uniqueItems").orElse(false));
+                result.setItems(getType(schema.mappingNode("items").required(), model, prop));
+                return result;
+            } else {
+                var result = new CodegenPrimitiveType();
+                result.setType(type);
+                result.setFormat(schema.string("format").orNull());
+                return result;
+            }
         }
     }
 

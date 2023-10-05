@@ -1,6 +1,7 @@
 package org.openapifactory.api.codegen;
 
 import lombok.Data;
+import lombok.ToString;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -12,6 +13,7 @@ import java.util.TreeMap;
 import java.util.TreeSet;
 
 @Data
+@ToString(of={"name", "title", "description", "version"})
 public class OpenapiSpec {
     private final String modelSuffix = "Dto";
     private String name, title, description, version;
@@ -40,6 +42,10 @@ public class OpenapiSpec {
         return server;
     }
 
+    public CodegenOperation createOperation(String method, String path) {
+        return new CodegenOperation(method, path);
+    }
+
     public CodegenGenericModel addGenericModel(String modelName) {
         return addModel(new CodegenGenericModel(modelName + modelSuffix));
     }
@@ -49,15 +55,19 @@ public class OpenapiSpec {
     }
 
     public CodegenOneOfModel addOneOfModel(String modelName) {
-        return addModel(new CodegenOneOfModel(modelName + modelSuffix));
+        return addModel(new CodegenOneOfModel(this, modelName + modelSuffix));
+    }
+
+    public CodegenAllOfModel addAllOfModel(String modelName) {
+        return addModel(new CodegenAllOfModel(this, modelName + modelSuffix));
+    }
+
+    public CodegenModel getModel(CodegenTypeRef ref) {
+        return modelMap.get(ref.getClassName() + modelSuffix);
     }
 
     private <T extends CodegenModel> T addModel(T model) {
         modelMap.put(model.getName(), model);
         return model;
-    }
-
-    public CodegenOperation createOperation(String method, String path) {
-        return new CodegenOperation(method, path);
     }
 }

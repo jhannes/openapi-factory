@@ -1,14 +1,13 @@
 package org.openapifactory.api.codegen;
 
 import lombok.Data;
-import lombok.EqualsAndHashCode;
+import org.openapifactory.api.Maybe;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
 
 @Data
-@EqualsAndHashCode(callSuper = true)
-public class CodegenGenericModel extends CodegenModel implements CodegenPropertyMap {
+public class CodegenGenericModel implements CodegenModel, CodegenPropertyMap, CodegenPropertyModel {
     private final String name;
     private String description;
 
@@ -19,5 +18,10 @@ public class CodegenGenericModel extends CodegenModel implements CodegenProperty
         var property = new CodegenProperty(name);
         properties.put(name, property);
         return property;
+    }
+
+    @Override
+    public Maybe<CodegenProperty> getProperty(String name) {
+        return Maybe.ofNullable(properties.get(name), "Missing property [" + name + "] in " + getName());
     }
 }
