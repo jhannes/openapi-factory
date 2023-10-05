@@ -1,6 +1,7 @@
 package org.openapifactory.api.codegen;
 
 import lombok.Data;
+import lombok.ToString;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -10,9 +11,12 @@ import java.util.Map;
 import static org.openapifactory.api.StringUtil.toUpperCamelCase;
 
 @Data
+@ToString(of = {"method", "path", "operationId"})
 public class CodegenOperation {
     private final String method, path;
     private String operationId;
+    private String summary;
+    private final List<CodegenSecurity> security = new ArrayList<>();
 
     public CodegenOperation(String method, String path) {
         this.method = method.toUpperCase();
@@ -35,7 +39,9 @@ public class CodegenOperation {
     }
 
     public CodegenContent getRequestBody() {
-        return requestBodies.getOrDefault("application/json", requestBodies.get("application/x-www-form-urlencoded"));
+        return requestBodies.getOrDefault("application/json",
+                requestBodies.getOrDefault("application/x-www-form-urlencoded",
+                        requestBodies.get("multipart/form-data")));
     }
 
     public CodegenContent getResponseType() {
@@ -44,7 +50,8 @@ public class CodegenOperation {
 
     public boolean hasOnlyOptionalParams() {
         return parameters.stream().noneMatch(CodegenParameter::isRequired)  &&
-               requestBodies.values().stream().noneMatch(CodegenContent::isRequired);
+               requestBodies.values().stream().noneMatch(CodegenContent::isRequired) &&
+               security.isEmpty();
     }
 
     public CodegenParameter addParameter(String name) {
@@ -94,5 +101,15 @@ public class CodegenOperation {
         }
         result.append(s.substring(oldPos1));
         return result.toString();
+    }
+
+    public CodegenSecurity addSecurity(String name) {
+        var security = new CodegenSecurity(name);
+        this.security.add(security);
+        return security;
+    }
+
+    public boolean isGET() {
+        return method.equals("GET");
     }
 }

@@ -4,19 +4,15 @@ import difflib.DeleteDelta;
 import difflib.Delta;
 import difflib.DiffUtils;
 import difflib.InsertDelta;
-import difflib.Patch;
 import org.junit.jupiter.api.DynamicNode;
 
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
@@ -55,7 +51,6 @@ public class DiffNode {
         }
         allFiles.removeIf(this::isIgnored);
 
-
         return dynamicContainer(displayName, allFiles.stream().map(this::compareFile));
     }
 
@@ -73,8 +68,8 @@ public class DiffNode {
     }
 
     private boolean isIgnored(Path path) {
-        var ignoredFiles = Set.of("node_modules", "package-lock.json", "dist");
-        return ignoredFiles.contains(path.toString());
+        var ignoredFiles = Set.of("node_modules", "package-lock.json", "dist", ".gitignore", "git_push.sh");
+        return ignoredFiles.contains(path.toString()) || path.toString().startsWith(".openapi-generator");
     }
 
     private boolean isTextOutput(Path path) {

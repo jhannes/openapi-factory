@@ -39,6 +39,7 @@ public class OpenapiSpecParser {
         readServers(spec, node.sequenceNode("servers"));
         readModels(spec, node);
         readPaths(spec, node.mappingNode("paths").required());
+        readSecuritySchemes(spec, node);
     }
 
     protected void readServers(OpenapiSpec spec, Maybe<SpecSequenceNode> servers) {
@@ -68,6 +69,7 @@ public class OpenapiSpecParser {
         } else if (node.containsKey("enum")) {
             var enumModel = spec.addEnumModel(modelName);
             enumModel.getValues().addAll(node.sequenceNode("enum").required().stringList());
+            node.string("description").ifPresent(enumModel::setDescription);
         } else if (node.containsKey("allOf")) {
             var allOf = spec.addAllOfModel(modelName);
             allOf.getRequired().addAll(node.sequenceNode("required")
@@ -135,8 +137,9 @@ public class OpenapiSpecParser {
         }
     }
 
-    private static void readCodegenOperation(SpecMappingNode operationNode, CodegenOperation operation) {
+    private void readCodegenOperation(SpecMappingNode operationNode, CodegenOperation operation) {
         operationNode.string("operationId").ifPresent(operation::setOperationId);
+        operationNode.string("summary").ifPresent(operation::setSummary);
         var parameters = operationNode.sequenceNode("parameters");
         if (parameters.isPresent()) {
             for (var parameter : parameters.required().mappingNodes()) {
@@ -174,7 +177,32 @@ public class OpenapiSpecParser {
                 }
             }
         }
+        if (operationNode.containsKey("security")) {
+            for (var securityNode : operationNode.sequenceNode("security").required().mappingNodes()) {
+                for (var key : securityNode.keySet()) {
+                    var security = operation.addSecurity(key);
+                    securityNode.sequenceNode("key").map(SpecSequenceNode::stringList)
+                            .ifPresent(security::setScopes);
+                }
+            }
+        }
     }
+
+    private void readSecuritySchemes(OpenapiSpec spec, SpecMappingNode node) {
+        if (node.containsKey("components")) {
+            var componentsNode = node.mappingNode("components").required();
+            if (componentsNode.containsKey("securitySchemes")) {
+                var securitySchemesNode = componentsNode.mappingNode("securitySchemes").required();
+                for (var scheme : securitySchemesNode.keySet()) {
+                    var schemeNode = securitySchemesNode.mappingNode(scheme).required();
+                    var securityScheme = spec.addSecurityScheme(scheme);
+                    securityScheme.setType(schemeNode.string("type").required());
+                }
+            }
+        }
+    }
+
+
 
     private static CodegenType getType(SpecMappingNode schema, CodegenPropertyMap model, CodegenProp prop) {
         var $ref = schema.string("$ref");
@@ -192,6 +220,7 @@ public class OpenapiSpecParser {
             result.getValues().addAll(values);
             result.setDeclaredModel(model);
             result.setDeclaredProperty(prop);
+            schema.string("description").ifPresent(result::setDescription);
             return result;
         } else if (schema.containsKey("properties")) {
             var result = new CodegenInlineObjectType();

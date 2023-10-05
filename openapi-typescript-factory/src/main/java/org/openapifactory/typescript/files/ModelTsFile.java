@@ -3,6 +3,7 @@ package org.openapifactory.typescript.files;
 import org.openapifactory.api.FileGenerator;
 import org.openapifactory.api.codegen.CodegenAllOfModel;
 import org.openapifactory.api.codegen.CodegenArrayType;
+import org.openapifactory.api.codegen.CodegenEnum;
 import org.openapifactory.api.codegen.CodegenEnumModel;
 import org.openapifactory.api.codegen.CodegenGenericModel;
 import org.openapifactory.api.codegen.CodegenInlineEnumType;
@@ -47,7 +48,7 @@ public class ModelTsFile implements FileGenerator {
 
     private String modelSection(CodegenModel model) {
         if (model instanceof CodegenEnumModel enumModel) {
-            return modelEnumSection(enumModel);
+            return enumDeclaration(enumModel);
         } else if (model instanceof CodegenGenericModel generic) {
             return modelGenericSection(generic);
         } else if (model instanceof CodegenAllOfModel allOf) {
@@ -59,12 +60,13 @@ public class ModelTsFile implements FileGenerator {
         }
     }
 
-    private static String modelEnumSection(CodegenEnumModel enumModel) {
-        var name = enumModel.getName();
+    private static String enumDeclaration(CodegenEnum enumType) {
+        var name = enumType.getName();
         return "export const " + name + "Values = [\n" +
-               indent(4, enumModel.getValues(), s -> "\"" + s + "\",\n") +
+               indent(4, enumType.getValues(), s -> "\"" + s + "\",\n") +
                "] as const;\n" +
                "\n" +
+               docString(enumType.getDescription()) +
                "export type " + name + " = typeof " + name + "Values[number];\n";
     }
 
@@ -81,16 +83,10 @@ public class ModelTsFile implements FileGenerator {
         var result = "";
         for (var property : properties) {
             if (property.getType() instanceof CodegenInlineEnumType enumType) {
-                result += "\nexport const " + getTypeName(enumType) + "Values = [\n" +
-                          join(enumType.getValues(), s -> ("\"" + s + "\",").indent(4)) +
-                          "] as const;\n\n";
-                result += "export type " + getTypeName(enumType) + " = typeof " + getTypeName(enumType) + "Values[number];\n";
+                result += "\n" + enumDeclaration(enumType);
             } else if (property.getType() instanceof CodegenArrayType arrayType) {
                 if (arrayType.getItems() instanceof CodegenInlineEnumType enumType) {
-                    result += "\nexport const " + getTypeName(enumType) + "Values = [\n" +
-                              join(enumType.getValues(), s -> ("\"" + s + "\",").indent(4)) +
-                              "] as const;\n\n";
-                    result += "export type " + getTypeName(enumType) + " = typeof " + getTypeName(enumType) + "Values[number];\n";
+                    result += "\n" + enumDeclaration(enumType);
                 }
             }
         }

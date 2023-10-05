@@ -6,6 +6,7 @@ import org.openapifactory.api.codegen.CodegenContent;
 import org.openapifactory.api.codegen.CodegenOperation;
 import org.openapifactory.api.codegen.CodegenParameter;
 import org.openapifactory.api.codegen.CodegenProp;
+import org.openapifactory.api.codegen.CodegenSecurity;
 import org.openapifactory.api.codegen.OpenapiSpec;
 import org.openapifactory.typescript.TypescriptFragments;
 
@@ -48,7 +49,8 @@ public class ApiTsFile implements FileGenerator {
                 importSection(),
                 apiListSection(),
                 apiSection(),
-                serverSection()
+                serverSection(),
+                securitySchemeSection()
         ));
     }
 
@@ -91,58 +93,59 @@ public class ApiTsFile implements FileGenerator {
     }
 
     private static String interfaceDefinition(CodegenApi api) {
-        var operations = lines(api.getOperations(), ApiTsFile::operationDeclaration);
-        return """
-
-                /**
-                 * %s - object-oriented interface
-                 */
-                export interface %s {
-                %s
-                }
-                """.formatted(api.getApiName(), api.getApiName() + "Interface", operations);
+        return "\n" +
+               "/**\n" +
+               " * " + api.getApiName() + " - object-oriented interface\n" +
+               " */\n" +
+               "export interface " + api.getApiName() + "Interface {\n" +
+               indent(4, api.getOperations(), ApiTsFile::operationDeclaration) +
+               "}\n";
     }
 
     private static String operationDeclaration(CodegenOperation op) {
-        var params = "";
-        if (!op.getPathParams().isEmpty()) {
-            params += paramsDefinition("pathParams", op.getPathParams()).indent(8);
-        }
-        if (!op.getQueryParams().isEmpty()) {
-            params += paramsDefinition("queryParams", op.getQueryParams()).indent(8);
-        }
-        if (op.getRequestBody() != null) {
-            params += (propertyDefinition(op.getRequestBody()) + ";").indent(8);
-        }
-        if (!op.getHeaderParams().isEmpty()) {
-            params += paramsDefinitionWithQuotes("headers", op.getHeaderParams()).indent(8);
-        }
-        return
-                "    /**\n" +
-                "     *\n" +
-                (params.isEmpty() ? "" : "     * @param {*} [params] Request parameters, including pathParams, queryParams (including bodyParams) and http options.\n") +
-                "     * @throws {HttpError}\n" +
-                "     */\n" +
-                "    " + op.getOperationId() +
-                (params.isEmpty()
-                        ? "(params?: RequestCallOptions)" :
-                        "(params" + (op.hasOnlyOptionalParams() ? "?" : "") + ": {\n" + params + "    } & RequestCallOptions)")
-                + ": Promise<" + getResponseType(op.getResponseType()) + ">;";
+        var params = operationParameters(op);
+        return "/**\n" +
+               " *\n" +
+               (op.getSummary() != null ? " * @summary " + op.getSummary() + "\n" : "") +
+               (params.isEmpty() ? "" : " * @param {*} [params] Request parameters, including pathParams, queryParams (including bodyParams) and http options.\n") +
+               " * @throws {HttpError}\n" +
+               " */\n" +
+               op.getOperationId() +
+               (params.isEmpty()
+                       ? "(params?: RequestCallOptions)" :
+                       "(params" + (op.hasOnlyOptionalParams() ? "?" : "") + ": {\n" + params + "} & RequestCallOptions)")
+               + ": Promise<" + getResponseType(op.getResponseType()) + ">;\n";
     }
 
-    private static String apiImplementation(CodegenApi codegenApi) {
-        var operations = join(codegenApi.getOperations(), ApiTsFile::operationImplementation);
-        return """
-                                
-                /**
-                 * %s - object-oriented interface
-                 */
-                export class %s extends BaseAPI implements %s {
-                %s}
-                """.formatted(codegenApi.getApiName(), codegenApi.getApiName(), codegenApi.getApiName() + "Interface", operations);
+    private static String apiImplementation(CodegenApi api) {
+        return ("\n" +
+                "/**\n" +
+                " * " + api.getApiName() + " - object-oriented interface\n" +
+                " */\n" +
+                "export class " + api.getApiName() + " extends BaseAPI implements " + api.getApiName() + "Interface {\n" +
+                indent(4, api.getOperations(), ApiTsFile::operationImplementation) +
+                "}\n");
     }
 
     private static String operationImplementation(CodegenOperation op) {
+        var params = operationParameters(op);
+
+        return "/**\n" +
+               " *\n" +
+               (op.getSummary() != null ? " * @summary " + op.getSummary() + "\n" : "") +
+               (params.isEmpty() ? "" : " * @param {*} [params] Request parameters, including pathParams, queryParams (including bodyParams) and http options.\n") +
+               " * @throws {HttpError}\n" +
+               " */\n" +
+               "public async " + op.getOperationId() +
+               (params.isEmpty()
+                       ? "(params: RequestCallOptions = {})"
+                       : "(params" + (op.hasOnlyOptionalParams() ? "?" : "") + ": {\n" + params + "} & RequestCallOptions)") +
+               ": Promise<" + getResponseType(op.getResponseType()) + "> {\n" +
+               functionBody(op, op.getRequestBody()).indent(4) +
+               "}\n";
+    }
+
+    private static String operationParameters(CodegenOperation op) {
         var params = "";
         if (!op.getPathParams().isEmpty()) {
             params += paramsDefinition("pathParams", op.getPathParams()).indent(4);
@@ -150,24 +153,16 @@ public class ApiTsFile implements FileGenerator {
         if (!op.getQueryParams().isEmpty()) {
             params += paramsDefinition("queryParams", op.getQueryParams()).indent(4);
         }
-        var requestBody = op.getRequestBody();
-        if (requestBody != null) {
-            params += (propertyDefinition(requestBody) + ";").indent(4);
+        if (op.getRequestBody() != null) {
+            params += (propertyDefinition(op.getRequestBody()) + ";").indent(4);
         }
         if (!op.getHeaderParams().isEmpty()) {
             params += paramsDefinitionWithQuotes("headers", op.getHeaderParams()).indent(4);
         }
-
-        return ("/**\n" +
-                " *\n" +
-                (params.isEmpty() ? "" : " * @param {*} [params] Request parameters, including pathParams, queryParams (including bodyParams) and http options.\n") +
-                " * @throws {HttpError}\n" +
-                " */\n" +
-                "public async " + op.getOperationId() +
-                (params.isEmpty() ? "(params: RequestCallOptions = {})" : "(params" + (op.hasOnlyOptionalParams() ? "?" : "") + ": {\n" + params + "} & RequestCallOptions)") +
-                ": Promise<" + getResponseType(op.getResponseType()) + "> {\n" +
-                functionBody(op, requestBody) +
-                "}\n").indent(4);
+        if (!op.getSecurity().isEmpty()) {
+            params += "    security: " + join(" | ", op.getSecurity(), CodegenSecurity::getName) + ";\n";
+        }
+        return params;
     }
 
     private static String functionBody(CodegenOperation op, CodegenContent requestBody) {
@@ -179,40 +174,52 @@ public class ApiTsFile implements FileGenerator {
                     .filter(ApiTsFile::hasQueryOptions)
                     .map(ApiTsFile::getQueryOptions)
                     .collect(Collectors.joining(""));
-            var queryOptions = queryOptionsLines.isEmpty() ? "{}" : ("{\n" + queryOptionsLines.indent(12) + "        }");
+            var queryOptions = queryOptionsLines.isEmpty() ? "{}" : ("{\n" + queryOptionsLines.indent(8) + "    }");
             fetchExpression =
                     "this.url(\"" + op.getPath() + "\", " +
                     (op.getPathParams().isEmpty() ? "{}" : "params.pathParams") +
                     (op.getQueryParams().isEmpty() ? "" : ", params?.queryParams, " + queryOptions) + ")";
         }
-        if (requestBody != null) {
-            var body = requestBody.isFormContent()
-                    ? "this.formData(params.formParams)"
-                    : (op.hasOnlyOptionalParams()
-                    ? ("params?." + getName(requestBody) + " ? JSON.stringify(params." + getName(requestBody) + ") : undefined")
-                    : "JSON.stringify(params." + getName(requestBody) + ")");
+        if (requestBody != null || !op.getSecurity().isEmpty()) {
             return
-                    ("return await this.fetch(\n" +
+                    "return await this.fetch(\n" +
                      "    " + fetchExpression + ",\n" +
                      "    {\n" +
                      "        ...params,\n" +
-                     "        method: \"" + op.getMethod() + "\",\n" +
-                     "        body: " + body + ",\n" +
+                     (op.isGET() ? "" : "        method: \"" + op.getMethod() + "\",\n") +
+                     (requestBody == null ? "" : "        body: " + requestBodyExpression(op, requestBody) + ",\n") +
                      "        headers: {\n" +
                      "            ...this.removeEmpty(params" + (op.hasOnlyOptionalParams() ? "?" : "") + ".headers),\n" +
-                     "            \"Content-Type\": \"" + requestBody.getContentType() + "\",\n" +
+                     (op.getSecurity().isEmpty() ? "" : "            ...params.security?.headers(),\n") +
+                     (requestBody == null ? "" : "            \"Content-Type\": \"" + requestBody.getContentType() + "\",\n") +
                      "        },\n" +
                      "    }\n" +
-                     ");\n").indent(4);
-        } else if (op.getMethod().equals("GET")) {
-            return """
-                        return await this.fetch(
-                            %s, params
-                        );
-                    """.formatted(fetchExpression);
+                     ");\n";
+        } else if (op.isGET()) {
+            return "return await this.fetch(\n" +
+                   "    " + fetchExpression + ", params\n" +
+                   ");\n";
         } else {
-            return "OIOI";
+            return "return await this.fetch(\n" +
+                   "    " + fetchExpression + ",\n" +
+                   "    {\n" +
+                   "        ...params,\n" +
+                   "        method: \"" + op.getMethod() + "\",\n" +
+                   "    }\n" +
+                   ");\n";
         }
+    }
+
+    private static String requestBodyExpression(CodegenOperation op, CodegenContent requestBody) {
+        return switch (requestBody.getContentType()) {
+            case "application/x-www-form-urlencoded" -> "this.formData(params.formParams)";
+            case "multipart/form-data" -> "this.formData(params.formParams)";
+            case "application/json" ->
+                    op.hasOnlyOptionalParams()
+                            ? "params?." + getName(requestBody) + " ? JSON.stringify(params." + getName(requestBody) + ") : undefined"
+                            : "JSON.stringify(params." + getName(requestBody) + ")";
+            default -> throw new RuntimeException();
+        };
     }
 
     private static String paramsDefinition(String paramName, List<CodegenParameter> params) {
@@ -274,23 +281,20 @@ public class ApiTsFile implements FileGenerator {
                 ) +
                 "};\n" +
                 "\n";
+    }
 
-        /*
-        return """
-                                
-                type ServerNames =
-                    | "default";
-                                
-                export const servers: Record<ServerNames, ApplicationApis> = {
-                    "default": {
-                          discoveryApi: new DiscoveryApi(""),
-                          identityClientApi: new IdentityClientApi(""),
-                          identityProviderApi: new IdentityProviderApi(""),
-                    },
-                };
-                                
-                """;
+    protected String securitySchemeSection() {
+        return join(spec.getSecuritySchemes(), scheme -> """
 
-         */
+                export class %s implements SecurityScheme {
+                    constructor(private bearerToken: string) {}
+                                    
+                    headers(): Record<string, string> {
+                        return {
+                            "Authorization": `Bearer ${this.bearerToken}`,
+                        }
+                    }
+                }
+                """.formatted(scheme.getName()));
     }
 }

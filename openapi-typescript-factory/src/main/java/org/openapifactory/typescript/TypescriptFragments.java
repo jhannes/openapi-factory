@@ -46,7 +46,7 @@ public class TypescriptFragments {
             return "\"" + constant.getValue() + "\"";
         } else if (type instanceof CodegenPrimitiveType primitive) {
             if (primitive.getType().equals("string") && primitive.getFormat() != null) {
-                return Map.of("date-time", "Date", "date", "Date")
+                return Map.of("date-time", "Date", "date", "Date", "binary", "Blob")
                         .getOrDefault(primitive.getFormat(), primitive.getType());
             } else {
                 return Map.of("integer", "number", "float", "number", "object", "unknown")

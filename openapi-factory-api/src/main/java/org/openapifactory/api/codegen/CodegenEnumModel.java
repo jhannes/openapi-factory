@@ -6,7 +6,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Data
-public class CodegenEnumModel implements CodegenModel {
+public class CodegenEnumModel implements CodegenModel, CodegenEnum {
     private final String name;
     private final List<String> values = new ArrayList<>();
+    private String description;
 }

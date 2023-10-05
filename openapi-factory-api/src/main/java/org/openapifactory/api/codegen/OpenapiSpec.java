@@ -22,6 +22,7 @@ public class OpenapiSpec {
     private List<CodegenServer> servers = new ArrayList<>();
     private Map<String, CodegenApi> apiMap = new TreeMap<>();
     private Map<String, CodegenModel> modelMap = new LinkedHashMap<>();
+    private List<CodegenSecurityScheme> securitySchemes = new ArrayList<>();
 
     public Collection<CodegenApi> getApis() {
         return apiMap.values();
@@ -60,6 +61,12 @@ public class OpenapiSpec {
 
     public CodegenAllOfModel addAllOfModel(String modelName) {
         return addModel(new CodegenAllOfModel(this, modelName + modelSuffix));
+    }
+
+    public CodegenSecurityScheme addSecurityScheme(String scheme) {
+        var securityScheme = new CodegenSecurityScheme(scheme);
+        this.securitySchemes.add(securityScheme);
+        return securityScheme;
     }
 
     public CodegenModel getModel(CodegenTypeRef ref) {

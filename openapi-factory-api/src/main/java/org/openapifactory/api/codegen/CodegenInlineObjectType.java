@@ -2,6 +2,7 @@ package org.openapifactory.api.codegen;
 
 
 import lombok.Data;
+import lombok.ToString;
 import org.openapifactory.api.Maybe;
 
 import java.util.LinkedHashMap;
@@ -10,6 +11,7 @@ import java.util.Map;
 @Data
 public class CodegenInlineObjectType implements CodegenType, CodegenPropertyMap, CodegenPropertyModel {
     private String name;
+    @ToString.Exclude
     private final Map<String, CodegenProperty> properties = new LinkedHashMap<>();
 
     @Override
