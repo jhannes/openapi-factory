@@ -3,6 +3,7 @@ package org.openapifactory.typescript.files;
 import org.openapifactory.api.FileGenerator;
 import org.openapifactory.api.codegen.CodegenAllOfModel;
 import org.openapifactory.api.codegen.CodegenArrayType;
+import org.openapifactory.api.codegen.CodegenConstantType;
 import org.openapifactory.api.codegen.CodegenEnumModel;
 import org.openapifactory.api.codegen.CodegenGenericModel;
 import org.openapifactory.api.codegen.CodegenInlineEnumType;
@@ -56,22 +57,20 @@ public class ModelTestTsFile implements FileGenerator {
                ).indent(4) + "} from \"../model\";\n\n";
     }
 
-private String importInlineEnumValues(CodegenModel model) {
+    private String importInlineEnumValues(CodegenModel model) {
         if (model instanceof CodegenGenericModel generic) {
             return generic.getProperties().values().stream()
                     .map(CodegenProperty::getType)
                     .filter(p -> p instanceof CodegenInlineEnumType)
                     .map(t -> ((CodegenInlineEnumType) t))
-                    .filter(t -> t.getValues().size() > 1)
-                    .map(t -> "\n" + t.getTypeName() + "Values,")
+                    .map(t -> "\n" + t.getName() + "Values,")
                     .collect(Collectors.joining(""));
         } else if (model instanceof CodegenAllOfModel allOf) {
             return allOf.getOwnProperties().stream()
                     .map(CodegenProperty::getType)
                     .filter(p -> p instanceof CodegenInlineEnumType)
                     .map(t -> ((CodegenInlineEnumType) t))
-                    .filter(t -> t.getValues().size() > 1)
-                    .map(t -> "\n" + t.getTypeName() + "Values,")
+                    .map(t -> "\n" + t.getName() + "Values,")
                     .collect(Collectors.joining(""));
         } else {
             return "";
@@ -495,19 +494,17 @@ private String importInlineEnumValues(CodegenModel model) {
                        "    () => this.sampleString(\"" + Objects.toString(primitive.getFormat(), "") + "\", \"" + p.getExample() + "\")\n" +
                        "),\n";
             }
+        } else if (p.getType() instanceof CodegenConstantType constant) {
+            return p.getName() + ": \"" + constant.getValue() + "\",\n";
         } else if (p.getType() instanceof CodegenInlineEnumType enumModel) {
-            if (enumModel.getValues().size() == 1) {
-                return p.getName() + ": \"" + enumModel.getValues().get(0) + "\",\n";
-            } else {
-                return p.getName() + ": this.generate(\n" +
-                       "    template?." + p.getName() + ",\n" +
-                       "    { containerClass, propertyName: \"" + p.getName() + "\", example: \"null\", isNullable: false },\n" +
-                       "    () => this.pickOne(" + enumModel.getTypeName() + "Values)\n" +
-                       "),\n";
-            }
+            return p.getName() + ": this.generate(\n" +
+                   "    template?." + p.getName() + ",\n" +
+                   "    { containerClass, propertyName: \"" + p.getName() + "\", example: \"null\", isNullable: false },\n" +
+                   "    () => this.pickOne(" + enumModel.getName() + "Values)\n" +
+                   "),\n";
         } else if (p.getType() instanceof CodegenArrayType array) {
             var functionCall = "sampleArray" + toUpperCamelCase(getTypeName(array.getItems()));
-            if (array.getItems() instanceof CodegenInlineEnumType) {
+            if (array.getItems() instanceof CodegenInlineEnumType || array.getItems() instanceof CodegenConstantType) {
                 functionCall = "sampleArrayString";
             }
             return p.getName() + ": this.generate(\n" +
@@ -518,7 +515,7 @@ private String importInlineEnumValues(CodegenModel model) {
         } else if (p.getType() instanceof CodegenRecordType record) {
             // TODO: This is a bug in the old generator - records shouldn't generate arrays
             var functionCall = "sampleArray" + toUpperCamelCase(getTypeName(record.getAdditionalProperties()));
-            if (record.getAdditionalProperties() instanceof CodegenInlineEnumType) {
+            if (record.getAdditionalProperties() instanceof CodegenInlineEnumType || record.getAdditionalProperties() instanceof CodegenConstantType) {
                 functionCall = "sampleArrayString";
             }
             return p.getName() + ": this.generate(\n" +

@@ -54,9 +54,8 @@ public class CodegenOneOfModel implements CodegenModel {
                     }
                     var mappedName = ((CodegenPropertyModel)model).getProperty(discriminator.propertyName)
                             .map(CodegenProperty::getType)
-                            .filterType(CodegenInlineEnumType.class)
-                            .filter(m -> m.getValues().size() == 1, "enum should have only one value")
-                            .map(m -> m.getValues().get(0))
+                            .filterType(CodegenConstantType.class)
+                            .map(CodegenConstantType::getValue)
                             .orElse(ref.getClassName());
                     return new Mapping(mappedName, model);
                 }).toList();

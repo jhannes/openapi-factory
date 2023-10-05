@@ -2,7 +2,7 @@ package org.openapifactory.typescript;
 
 import org.openapifactory.api.StringUtil;
 import org.openapifactory.api.codegen.CodegenArrayType;
-import org.openapifactory.api.codegen.CodegenInlineEnumType;
+import org.openapifactory.api.codegen.CodegenConstantType;
 import org.openapifactory.api.codegen.CodegenInlineObjectType;
 import org.openapifactory.api.codegen.CodegenModel;
 import org.openapifactory.api.codegen.CodegenParameter;
@@ -42,8 +42,8 @@ public class TypescriptFragments {
             return model.getName();
         } else if (type instanceof CodegenArrayType arrayType) {
             return (arrayType.isUniqueItems() ? "Set" : "Array") + "<" + getTypeName(arrayType.getItems()) + ">";
-        } else if (type instanceof CodegenInlineEnumType enumType) {
-            return enumType.getTypeName();
+        } else if (type instanceof CodegenConstantType constant) {
+            return "\"" + constant.getValue() + "\"";
         } else if (type instanceof CodegenPrimitiveType primitive) {
             if (primitive.getType().equals("string") && primitive.getFormat() != null) {
                 return Map.of("date-time", "Date", "date", "Date")

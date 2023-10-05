@@ -1,10 +1,10 @@
 package org.openapifactory.api;
 
-import java.util.Collection;
 import java.util.IllegalFormatException;
+import java.util.List;
 
 public interface SpecSequenceNode {
     Iterable<SpecMappingNode> mappingNodes() throws IllegalFormatException;
 
-    Collection<String> stringList() throws IllegalFormatException;
+    List<String> stringList() throws IllegalFormatException;
 }

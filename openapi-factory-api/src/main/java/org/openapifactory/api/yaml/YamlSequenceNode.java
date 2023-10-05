@@ -8,7 +8,6 @@ import org.yaml.snakeyaml.nodes.ScalarNode;
 import org.yaml.snakeyaml.nodes.SequenceNode;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 
 public class YamlSequenceNode implements SpecSequenceNode {
@@ -36,7 +35,7 @@ public class YamlSequenceNode implements SpecSequenceNode {
     }
 
     @Override
-    public Collection<String> stringList() throws IllegalArgumentException {
+    public List<String> stringList() throws IllegalArgumentException {
         var result = new ArrayList<String>();
         var value = node.getValue();
         for (int i = 0; i < value.size(); i++) {

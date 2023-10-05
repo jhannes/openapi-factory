@@ -1,6 +1,7 @@
 package org.openapifactory.api;
 
 import org.openapifactory.api.codegen.CodegenArrayType;
+import org.openapifactory.api.codegen.CodegenConstantType;
 import org.openapifactory.api.codegen.CodegenContact;
 import org.openapifactory.api.codegen.CodegenInlineEnumType;
 import org.openapifactory.api.codegen.CodegenInlineObjectType;
@@ -20,7 +21,6 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.Set;
 
 public class OpenapiSpecParser {
 
@@ -72,7 +72,7 @@ public class OpenapiSpecParser {
             var allOf = spec.addAllOfModel(modelName);
             allOf.getRequired().addAll(node.sequenceNode("required")
                     .map(SpecSequenceNode::stringList)
-                    .orElse(Set.of()));
+                    .orElse(List.of()));
             for (var superModel : node.sequenceNode("allOf").required().mappingNodes()) {
                 if (superModel.containsKey("$ref")) {
                     allOf.addRefSuperModel(superModel.string("$ref").required());
@@ -103,7 +103,7 @@ public class OpenapiSpecParser {
     private static void readProperties(SpecMappingNode node, CodegenPropertyMap model) {
         var required = node.sequenceNode("required")
                 .map(SpecSequenceNode::stringList)
-                .orElse(Set.of());
+                .orElse(List.of());
         var properties = node.mappingNode("properties").required();
         for (var name : properties.keySet()) {
             var codegen = model.addProperty(name);
@@ -183,9 +183,13 @@ public class OpenapiSpecParser {
             return new CodegenTypeRef($ref.required());
         }
         if (schema.containsKey("enum")) {
+            var values = schema.sequenceNode("enum").required().stringList();
+            if (values.size() == 1) {
+                return new CodegenConstantType(values.get(0));
+            }
             var result = new CodegenInlineEnumType();
             result.setType(schema.string("type").orElse("string"));
-            result.getValues().addAll(schema.sequenceNode("enum").required().stringList());
+            result.getValues().addAll(values);
             result.setDeclaredModel(model);
             result.setDeclaredProperty(prop);
             return result;
