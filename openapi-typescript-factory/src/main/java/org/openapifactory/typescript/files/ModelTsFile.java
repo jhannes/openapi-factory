@@ -1,16 +1,16 @@
 package org.openapifactory.typescript.files;
 
 import org.openapifactory.api.FileGenerator;
-import org.openapifactory.api.codegen.CodegenAllOfModel;
-import org.openapifactory.api.codegen.CodegenArrayType;
-import org.openapifactory.api.codegen.CodegenEnum;
-import org.openapifactory.api.codegen.CodegenEnumModel;
-import org.openapifactory.api.codegen.CodegenGenericModel;
-import org.openapifactory.api.codegen.CodegenInlineEnumType;
-import org.openapifactory.api.codegen.CodegenModel;
-import org.openapifactory.api.codegen.CodegenOneOfModel;
+import org.openapifactory.api.codegen.types.CodegenAllOfModel;
+import org.openapifactory.api.codegen.types.CodegenArrayType;
+import org.openapifactory.api.codegen.types.CodegenEnum;
+import org.openapifactory.api.codegen.types.CodegenEnumModel;
+import org.openapifactory.api.codegen.types.CodegenGenericModel;
+import org.openapifactory.api.codegen.types.CodegenEmbeddedEnumType;
+import org.openapifactory.api.codegen.types.CodegenModel;
+import org.openapifactory.api.codegen.types.CodegenOneOfModel;
 import org.openapifactory.api.codegen.CodegenProperty;
-import org.openapifactory.api.codegen.CodegenTypeRef;
+import org.openapifactory.api.codegen.types.CodegenTypeRef;
 import org.openapifactory.api.codegen.OpenapiSpec;
 import org.openapifactory.typescript.TypescriptFragments;
 
@@ -133,10 +133,10 @@ public class ModelTsFile implements FileGenerator {
     private static String inlineEnumSection(Collection<CodegenProperty> properties) {
         var result = "";
         for (var property : properties) {
-            if (property.getType() instanceof CodegenInlineEnumType enumType) {
+            if (property.getType() instanceof CodegenEmbeddedEnumType enumType) {
                 result += "\n" + enumDeclaration(enumType);
             } else if (property.getType() instanceof CodegenArrayType arrayType) {
-                if (arrayType.getItems() instanceof CodegenInlineEnumType enumType) {
+                if (arrayType.getItems() instanceof CodegenEmbeddedEnumType enumType) {
                     result += "\n" + enumDeclaration(enumType);
                 }
             }

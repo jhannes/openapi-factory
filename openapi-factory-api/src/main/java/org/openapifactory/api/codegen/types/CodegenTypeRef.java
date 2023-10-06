@@ -1,7 +1,8 @@
-package org.openapifactory.api.codegen;
+package org.openapifactory.api.codegen.types;
 
 import lombok.Data;
 import lombok.ToString;
+import org.openapifactory.api.codegen.OpenapiSpec;
 
 import java.util.regex.Pattern;
 

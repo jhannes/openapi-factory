@@ -1,31 +1,32 @@
 package org.openapifactory.api;
 
-import org.openapifactory.api.codegen.CodegenArrayType;
-import org.openapifactory.api.codegen.CodegenConstantType;
+import org.openapifactory.api.codegen.types.CodegenAnonymousObjectModel;
+import org.openapifactory.api.codegen.types.CodegenArrayType;
+import org.openapifactory.api.codegen.types.CodegenConstantType;
 import org.openapifactory.api.codegen.CodegenContact;
-import org.openapifactory.api.codegen.CodegenInlineEnumType;
-import org.openapifactory.api.codegen.CodegenAnonymousObjectType;
+import org.openapifactory.api.codegen.types.CodegenEmbeddedEnumType;
 import org.openapifactory.api.codegen.CodegenOperation;
 import org.openapifactory.api.codegen.CodegenParameter;
-import org.openapifactory.api.codegen.CodegenPrimitiveType;
+import org.openapifactory.api.codegen.types.CodegenPrimitiveType;
 import org.openapifactory.api.codegen.CodegenProp;
 import org.openapifactory.api.codegen.CodegenPropertyModel;
-import org.openapifactory.api.codegen.CodegenRecordType;
-import org.openapifactory.api.codegen.CodegenType;
-import org.openapifactory.api.codegen.CodegenTypeRef;
+import org.openapifactory.api.codegen.types.CodegenRecordType;
+import org.openapifactory.api.codegen.types.CodegenType;
+import org.openapifactory.api.codegen.types.CodegenTypeRef;
 import org.openapifactory.api.codegen.OpenapiSpec;
-import org.openapifactory.api.yaml.YamlMappingNode;
 
 import java.io.IOException;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 
 public class OpenapiSpecParser {
 
     public OpenapiSpec createOpenApiSpec(Path apiDocument) throws IOException {
-        return createSpec(YamlMappingNode.read(apiDocument));
+        return createSpec(SpecMappingNode.read(apiDocument));
     }
 
     protected OpenapiSpec createSpec(SpecMappingNode node) {
@@ -35,14 +36,14 @@ public class OpenapiSpecParser {
     }
 
     protected void readSpec(SpecMappingNode node, OpenapiSpec spec) {
-        readInfo(spec, node.mappingNode("info").required());
-        readServers(spec, node.sequenceNode("servers"));
-        readModels(spec, node);
-        readPaths(spec, node.mappingNode("paths").required());
-        readSecuritySchemes(spec, node);
+        readInfo(node.mappingNode("info").required(), spec);
+        readServers(node.sequenceNode("servers"), spec);
+        readModels(node, spec);
+        readPaths(node.mappingNode("paths").required(), spec);
+        readSecuritySchemes(node, spec);
     }
 
-    protected void readServers(OpenapiSpec spec, Maybe<SpecSequenceNode> servers) {
+    protected void readServers(Maybe<SpecSequenceNode> servers, OpenapiSpec spec) {
         if (servers.isPresent()) {
             for (var server : servers.required().mappingNodes()) {
                 var codegenServer = spec.addServer();
@@ -54,7 +55,7 @@ public class OpenapiSpecParser {
         }
     }
 
-    private void readModels(OpenapiSpec spec, SpecMappingNode node) {
+    private void readModels(SpecMappingNode node, OpenapiSpec spec) {
         var schemas = node.mappingNode("components").required().mappingNode("schemas").required();
         for (var modelName : schemas.keySet()) {
             createModel(spec, modelName, schemas.mappingNode(modelName).required());
@@ -127,16 +128,32 @@ public class OpenapiSpecParser {
         }
     }
 
-    protected void readPaths(OpenapiSpec spec, SpecMappingNode paths) {
+    protected void readPaths(SpecMappingNode paths, OpenapiSpec spec) {
         for (var pathExpression : paths.keySet()) {
             var pathNode = paths.mappingNode(pathExpression).required();
+            var specialValues = Set.of("$ref", "summary", "description", "servers", "parameters");
+
+            var commonParameters = new ArrayList<CodegenParameter>();
+            var parameters = pathNode.sequenceNode("parameters");
+            if (parameters.isPresent()) {
+                for (var paramNode : parameters.required().mappingNodes()) {
+                    var parameter = new CodegenParameter(spec, paramNode.string("name").required());
+                    readParameter(paramNode, parameter);
+                    commonParameters.add(parameter);
+                }
+            }
+
             for (var method : pathNode.keySet()) {
+                if (specialValues.contains(method)) {
+                    continue;
+                }
                 var operationNode = pathNode.mappingNode(method).required();
                 var tags = operationNode.sequenceNode("tags")
                         .map(SpecSequenceNode::stringList)
                         .orElse(List.of("default"));
 
                 var operation = spec.createOperation(method, pathExpression);
+                operation.getParameters().addAll(commonParameters);
                 readCodegenOperation(operationNode, operation);
                 for (var tag : tags) {
                     spec.addOperation(tag, operation);
@@ -152,12 +169,7 @@ public class OpenapiSpecParser {
         if (parameters.isPresent()) {
             for (var parameter : parameters.required().mappingNodes()) {
                 var codegenParameter = operation.addParameter(parameter.string("name").required());
-                codegenParameter.setRequired(parameter.getBoolean("required").orElse(false));
-                codegenParameter.setIn(parameter.getEnum("in", CodegenParameter.ParameterLocation.class).required());
-                codegenParameter.setExplode(parameter.getBoolean("explode").orElse(true));
-                codegenParameter.setStyle(parameter.getEnum("style", CodegenParameter.Style.class).orNull());
-                var schema = parameter.mappingNode("schema").required();
-                codegenParameter.setType(getType(operation.getSpec(), schema, null, codegenParameter));
+                readParameter(parameter, codegenParameter);
             }
         }
 
@@ -168,20 +180,29 @@ public class OpenapiSpecParser {
                 var codegenContent = operation.addRequestBody(contentType);
                 codegenContent.setRequired(requestBody.getBoolean("required").orElse(false));
                 var schema = (content.mappingNode(contentType).required()).mappingNode("schema").required();
-                codegenContent.setType(getType(operation.getSpec(), schema, null, null));
+                var requestType = getType(operation.getSpec(), schema, null, null);
+                if (!codegenContent.isFormContent() && requestType instanceof CodegenAnonymousObjectModel object) {
+                    codegenContent.setType(operation.addRequestModel(object));
+                } else {
+                    codegenContent.setType(requestType);
+                }
             }
         }
         if (operationNode.containsKey("responses")) {
             var responses = operationNode.mappingNode("responses").required();
             for (var o : responses.keySet()) {
-                if (o.equals("200")) {
-                    var maybeContent = responses.mappingNode(o).required().mappingNode("content");
-                    if (maybeContent.isPresent()) {
-                        var content = maybeContent.required();
-                        for (var contentType : content.keySet()) {
-                            var codegenContent = operation.addResponseType(contentType);
-                            var schema = content.mappingNode(contentType).required().mappingNode("schema").required();
-                            codegenContent.setType(getType(operation.getSpec(), schema, null, null));
+                var maybeContent = responses.mappingNode(o).required().mappingNode("content");
+                var response = operation.addResponse(o.equals("default") ? 200 : Integer.parseInt(o));
+                if (maybeContent.isPresent()) {
+                    var content = maybeContent.required();
+                    for (var contentType : content.keySet()) {
+                        var codegenContent = response.addResponseType(contentType);
+                        var schema = content.mappingNode(contentType).required().mappingNode("schema").required();
+                        var responseType = getType(operation.getSpec(), schema, null, null);
+                        if (responseType instanceof CodegenAnonymousObjectModel object) {
+                            codegenContent.setType(operation.addResponseModel(object, Integer.parseInt(o)));
+                        } else {
+                            codegenContent.setType(responseType);
                         }
                     }
                 }
@@ -198,7 +219,15 @@ public class OpenapiSpecParser {
         }
     }
 
-    private void readSecuritySchemes(OpenapiSpec spec, SpecMappingNode node) {
+    private static void readParameter(SpecMappingNode parameterNode, CodegenParameter parameter) {
+        parameter.setRequired(parameterNode.getBoolean("required").orElse(false));
+        parameter.setIn(parameterNode.getEnum("in", CodegenParameter.ParameterLocation.class).required());
+        parameter.setExplode(parameterNode.getBoolean("explode").orElse(true));
+        parameter.setStyle(parameterNode.getEnum("style", CodegenParameter.Style.class).orNull());
+        parameter.setType(getType(parameter.getSpec(), parameterNode.mappingNode("schema").required(), null, parameter));
+    }
+
+    private void readSecuritySchemes(SpecMappingNode node, OpenapiSpec spec) {
         if (node.containsKey("components")) {
             var componentsNode = node.mappingNode("components").required();
             if (componentsNode.containsKey("securitySchemes")) {
@@ -213,7 +242,6 @@ public class OpenapiSpecParser {
     }
 
 
-
     private static CodegenType getType(OpenapiSpec spec, SpecMappingNode schema, CodegenPropertyModel model, CodegenProp prop) {
         if (schema.containsKey("$ref")) {
             return new CodegenTypeRef(spec, schema.string("$ref").required());
@@ -223,7 +251,7 @@ public class OpenapiSpecParser {
             if (values.size() == 1) {
                 return new CodegenConstantType(values.get(0));
             }
-            var result = new CodegenInlineEnumType();
+            var result = new CodegenEmbeddedEnumType();
             result.setType(schema.string("type").orElse("string"));
             result.getValues().addAll(values);
             result.setDeclaredModel(model);
@@ -231,7 +259,7 @@ public class OpenapiSpecParser {
             schema.string("description").ifPresent(result::setDescription);
             return result;
         } else if (schema.containsKey("properties")) {
-            var result = new CodegenAnonymousObjectType(spec);
+            var result = new CodegenAnonymousObjectModel(spec);
             readProperties(schema, result);
             return result;
         } else if (schema.containsKey("additionalProperties")) {
@@ -254,7 +282,7 @@ public class OpenapiSpecParser {
         }
     }
 
-    private static void readInfo(OpenapiSpec spec, SpecMappingNode infoNode) {
+    private static void readInfo(SpecMappingNode infoNode, OpenapiSpec spec) {
         spec.setTitle(infoNode.string("title").orNull());
         spec.setDescription(infoNode.string("description").orNull());
         spec.setVersion(infoNode.string("version").orNull());

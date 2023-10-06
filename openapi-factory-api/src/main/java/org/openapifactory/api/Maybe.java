@@ -33,6 +33,8 @@ public interface Maybe<T> {
 
     Maybe<T> filter(Predicate<T> predicate, String errorMessage);
 
+    Maybe<T> filter(Predicate<T> predicate, Function<T, String> errorMessage);
+
 
     class Missing<T> implements Maybe<T> {
         private final String errorMessage;
@@ -77,6 +79,11 @@ public interface Maybe<T> {
 
         @Override
         public Maybe<T> filter(Predicate<T> predicate, String errorMessage) {
+            return missing(this.errorMessage);
+        }
+
+        @Override
+        public Maybe<T> filter(Predicate<T> predicate, Function<T, String> errorMessage) {
             return missing(this.errorMessage);
         }
     }
@@ -130,6 +137,11 @@ public interface Maybe<T> {
         @Override
         public Maybe<T> filter(Predicate<T> predicate, String errorMessage) {
             return predicate.test(o) ? this : missing(errorMessage);
+        }
+
+        @Override
+        public Maybe<T> filter(Predicate<T> predicate, Function<T, String > errorMessage) {
+            return predicate.test(o) ? this : missing(errorMessage.apply(o));
         }
     }
 }

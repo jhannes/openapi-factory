@@ -1,6 +1,7 @@
 package org.openapifactory.api.codegen;
 
 import org.openapifactory.api.Maybe;
+import org.openapifactory.api.codegen.types.CodegenType;
 
 import java.util.Collection;
 

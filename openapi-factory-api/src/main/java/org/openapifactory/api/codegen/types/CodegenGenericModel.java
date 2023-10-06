@@ -1,10 +1,13 @@
-package org.openapifactory.api.codegen;
+package org.openapifactory.api.codegen.types;
 
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import lombok.ToString;
 import org.openapifactory.api.Maybe;
+import org.openapifactory.api.codegen.CodegenProperty;
+import org.openapifactory.api.codegen.CodegenPropertyModel;
+import org.openapifactory.api.codegen.OpenapiSpec;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -22,6 +25,7 @@ public class CodegenGenericModel implements CodegenPropertyModel, CodegenModel {
     @Getter @Setter
     private String description;
 
+    @Getter
     private final Map<String, CodegenProperty> properties = new LinkedHashMap<>();
 
     @Override

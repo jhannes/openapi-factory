@@ -3,6 +3,7 @@ package org.openapifactory.api.codegen;
 import lombok.Data;
 import lombok.SneakyThrows;
 import lombok.ToString;
+import org.openapifactory.api.codegen.types.CodegenType;
 
 @Data
 public class CodegenProperty implements CodegenProp, Cloneable {
@@ -17,7 +18,7 @@ public class CodegenProperty implements CodegenProp, Cloneable {
 
     @SneakyThrows
     @Override
-    protected CodegenProperty clone() {
+    public CodegenProperty clone() {
         return (CodegenProperty) super.clone();
     }
 }

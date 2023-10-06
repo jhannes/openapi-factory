@@ -2,6 +2,7 @@ package org.openapifactory.api.codegen;
 
 import lombok.Data;
 import lombok.ToString;
+import org.openapifactory.api.codegen.types.CodegenType;
 
 @Data
 public class CodegenContent {

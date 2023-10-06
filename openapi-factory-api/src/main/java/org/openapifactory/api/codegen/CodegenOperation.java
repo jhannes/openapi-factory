@@ -2,6 +2,8 @@ package org.openapifactory.api.codegen;
 
 import lombok.Data;
 import lombok.ToString;
+import org.openapifactory.api.codegen.types.CodegenAnonymousObjectModel;
+import org.openapifactory.api.codegen.types.CodegenType;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -18,17 +20,21 @@ public class CodegenOperation {
     private String operationId;
     private String summary;
     private final List<CodegenSecurity> security = new ArrayList<>();
+    private final List<CodegenResponse> responses = new ArrayList<>();
 
     public CodegenOperation(OpenapiSpec spec, String method, String path) {
         this.spec = spec;
-        this.method = method.toUpperCase();
+        this.method = method;
         this.path = path;
-        this.operationId = inlinePathParams(camelCaseSlashes(path)) + toUpperCamelCase(method);
+        this.operationId = defaultOperationId();
+    }
+
+    private String defaultOperationId() {
+        return inlinePathParams(camelCaseSlashes(path)) + toUpperCamelCase(method);
     }
 
     private List<CodegenParameter> parameters = new ArrayList<>();
     private Map<String, CodegenContent> requestBodies = new LinkedHashMap<>();
-    private Map<String, CodegenContent> responseTypes = new LinkedHashMap<>();
 
     public List<CodegenParameter> getPathParams() {
         return filterOnLocation(CodegenParameter.ParameterLocation.path);
@@ -46,10 +52,6 @@ public class CodegenOperation {
                         requestBodies.get("multipart/form-data")));
     }
 
-    public CodegenContent getResponseType() {
-        return responseTypes.get("application/json");
-    }
-
     public boolean hasOnlyOptionalParams() {
         return parameters.stream().noneMatch(CodegenParameter::isRequired)  &&
                requestBodies.values().stream().noneMatch(CodegenContent::isRequired) &&
@@ -65,12 +67,6 @@ public class CodegenOperation {
     public CodegenContent addRequestBody(String contentType) {
         var content = new CodegenContent(spec, contentType);
         getRequestBodies().put(contentType, content);
-        return content;
-    }
-
-    public CodegenContent addResponseType(String contentType) {
-        var content = new CodegenContent(spec, contentType);
-        getResponseTypes().put(contentType, content);
         return content;
     }
 
@@ -112,6 +108,24 @@ public class CodegenOperation {
     }
 
     public boolean isGET() {
-        return method.equals("GET");
+        return getMethod().equalsIgnoreCase("GET");
+    }
+
+    public CodegenType addRequestModel(CodegenAnonymousObjectModel object) {
+        var namedModel = spec.addGenericModel(toUpperCamelCase(getOperationId()) + "Request");
+        object.getProperties().forEach(namedModel.getProperties()::put);
+        return namedModel;
+    }
+
+    public CodegenType addResponseModel(CodegenAnonymousObjectModel object, int responseCode) {
+        var namedModel = spec.addGenericModel(toUpperCamelCase(getOperationId()) + responseCode + "Response");
+        object.getProperties().forEach(namedModel.getProperties()::put);
+        return namedModel;
+    }
+
+    public CodegenResponse addResponse(int statusCode) {
+        var response = new CodegenResponse(spec, statusCode);
+        responses.add(response);
+        return response;
     }
 }

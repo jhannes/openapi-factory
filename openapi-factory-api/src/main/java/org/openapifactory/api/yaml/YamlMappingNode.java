@@ -20,6 +20,7 @@ import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 public class YamlMappingNode implements SpecMappingNode {
     private final List<String> path;
@@ -36,7 +37,7 @@ public class YamlMappingNode implements SpecMappingNode {
         this.mappingNode = (MappingNode) mappingNode;
 
         for (var nodeTuple : this.mappingNode.getValue()) {
-            var keyNode = (ScalarNode)nodeTuple.getKeyNode();
+            var keyNode = (ScalarNode) nodeTuple.getKeyNode();
             nodeMap.put(keyNode.getValue(), nodeTuple.getValueNode());
         }
 
@@ -52,7 +53,7 @@ public class YamlMappingNode implements SpecMappingNode {
 
     @Override
     public Maybe<SpecMappingNode> mappingNode(String key) {
-        if (!nodeMap.containsKey(key)) {
+        if (!containsKey(key)) {
             return missingKey(key);
         }
         return Maybe.present(new YamlMappingNode(append(path, key), nodeMap.get(key)));
@@ -60,7 +61,7 @@ public class YamlMappingNode implements SpecMappingNode {
 
     @Override
     public Maybe<SpecSequenceNode> sequenceNode(String key) {
-        if (!nodeMap.containsKey(key)) {
+        if (!containsKey(key)) {
             return missingKey(key);
         }
         return Maybe.present(new YamlSequenceNode(append(path, key), nodeMap.get(key)));
@@ -68,7 +69,7 @@ public class YamlMappingNode implements SpecMappingNode {
 
     @Override
     public Maybe<String> string(String key) {
-        if (!nodeMap.containsKey(key)) {
+        if (!containsKey(key)) {
             return missingKey(key);
         }
         var node = nodeMap.get(key);
@@ -82,37 +83,21 @@ public class YamlMappingNode implements SpecMappingNode {
     }
 
     @Override
-    public Maybe<Boolean> getBoolean(String key) {
-        return string(key).map("true"::equals);
-    }
-
-    @Override
     public <T extends Enum<T>> Maybe<T> getEnum(String key, Class<T> enumType) {
-        if (!nodeMap.containsKey(key)) {
-            return missingKey(key);
-        }
-        var node = nodeMap.get(key);
-        if (node instanceof ScalarNode scalar) {
-            try {
-                return Maybe.present(Enum.valueOf(enumType, scalar.getValue()));
-            } catch (IllegalArgumentException e) {
-                throw new RuntimeException("Expected key " + key + " at " + path + " value " + scalar.getValue() + " to be " + Arrays.toString(enumType.getEnumConstants()));
-            }
-        } else {
-            throw new RuntimeException(
-                    "Expected key " + key + " to be scalar at " + path + " " + node
-            );
-        }
+        return string(key).map(s -> asEnum(enumType, s, key));
     }
 
     @Override
-    public Iterable<String> keySet() {
+    public Set<String> keySet() {
         return nodeMap.keySet();
     }
 
-    @Override
-    public boolean containsKey(String key) {
-        return nodeMap.containsKey(key);
+    private <T extends Enum<T>> T asEnum(Class<T> enumType, String s, String key) {
+        try {
+            return Enum.valueOf(enumType, s);
+        } catch (IllegalArgumentException e) {
+            throw new RuntimeException("Expected key " + key + " at " + path + " value " + s + " to be " + Arrays.toString(enumType.getEnumConstants()));
+        }
     }
 
     private <T> Maybe<T> missingKey(String key) {

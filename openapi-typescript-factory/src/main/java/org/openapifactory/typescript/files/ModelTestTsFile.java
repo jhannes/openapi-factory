@@ -1,17 +1,17 @@
 package org.openapifactory.typescript.files;
 
 import org.openapifactory.api.FileGenerator;
-import org.openapifactory.api.codegen.CodegenAllOfModel;
-import org.openapifactory.api.codegen.CodegenArrayType;
-import org.openapifactory.api.codegen.CodegenConstantType;
-import org.openapifactory.api.codegen.CodegenEnumModel;
-import org.openapifactory.api.codegen.CodegenGenericModel;
-import org.openapifactory.api.codegen.CodegenInlineEnumType;
-import org.openapifactory.api.codegen.CodegenModel;
-import org.openapifactory.api.codegen.CodegenOneOfModel;
-import org.openapifactory.api.codegen.CodegenPrimitiveType;
+import org.openapifactory.api.codegen.types.CodegenAllOfModel;
+import org.openapifactory.api.codegen.types.CodegenArrayType;
+import org.openapifactory.api.codegen.types.CodegenConstantType;
+import org.openapifactory.api.codegen.types.CodegenEnumModel;
+import org.openapifactory.api.codegen.types.CodegenGenericModel;
+import org.openapifactory.api.codegen.types.CodegenEmbeddedEnumType;
+import org.openapifactory.api.codegen.types.CodegenModel;
+import org.openapifactory.api.codegen.types.CodegenOneOfModel;
+import org.openapifactory.api.codegen.types.CodegenPrimitiveType;
 import org.openapifactory.api.codegen.CodegenProperty;
-import org.openapifactory.api.codegen.CodegenRecordType;
+import org.openapifactory.api.codegen.types.CodegenRecordType;
 import org.openapifactory.api.codegen.OpenapiSpec;
 
 import java.io.IOException;
@@ -61,13 +61,13 @@ public class ModelTestTsFile implements FileGenerator {
         if (model instanceof CodegenGenericModel generic) {
             return generic.getAllProperties().stream()
                     .map(CodegenProperty::getType)
-                    .filter(p -> p instanceof CodegenInlineEnumType)
+                    .filter(p -> p instanceof CodegenEmbeddedEnumType)
                     .map(t -> "\n" + getTypeName(t) + "Values,")
                     .collect(Collectors.joining(""));
         } else if (model instanceof CodegenAllOfModel allOf) {
             return allOf.getOwnProperties().stream()
                     .map(CodegenProperty::getType)
-                    .filter(p -> p instanceof CodegenInlineEnumType)
+                    .filter(p -> p instanceof CodegenEmbeddedEnumType)
                     .map(t -> "\n" + getTypeName(t) + "Values,")
                     .collect(Collectors.joining(""));
         } else {
@@ -475,7 +475,7 @@ public class ModelTestTsFile implements FileGenerator {
 
     private static String propertyFactory(CodegenProperty p) {
         if (p.getType() instanceof CodegenPrimitiveType primitive) {
-            if ("date".equals(primitive.getFormat()) || "date-time".equals(primitive.getFormat())) {
+            if (primitive.isDate()) {
                 return p.getName() + ": this.generate(\n" +
                        "    template?." + p.getName() + ",\n" +
                        "    { containerClass, propertyName: \"" + p.getName() + "\", example: \"null\", isNullable: false },\n" +
@@ -491,7 +491,7 @@ public class ModelTestTsFile implements FileGenerator {
             }
         } else if (p.getType() instanceof CodegenConstantType constant) {
             return p.getName() + ": \"" + constant.getValue() + "\",\n";
-        } else if (p.getType() instanceof CodegenInlineEnumType enumModel) {
+        } else if (p.getType() instanceof CodegenEmbeddedEnumType enumModel) {
             return p.getName() + ": this.generate(\n" +
                    "    template?." + p.getName() + ",\n" +
                    "    { containerClass, propertyName: \"" + p.getName() + "\", example: \"null\", isNullable: false },\n" +
@@ -499,7 +499,7 @@ public class ModelTestTsFile implements FileGenerator {
                    "),\n";
         } else if (p.getType() instanceof CodegenArrayType array) {
             var functionCall = "sampleArray" + toUpperCamelCase(getTypeName(array.getItems()));
-            if (array.getItems() instanceof CodegenInlineEnumType || array.getItems() instanceof CodegenConstantType) {
+            if (array.getItems() instanceof CodegenEmbeddedEnumType || array.getItems() instanceof CodegenConstantType) {
                 functionCall = "sampleArrayString";
             }
             return p.getName() + ": this.generate(\n" +
@@ -510,7 +510,7 @@ public class ModelTestTsFile implements FileGenerator {
         } else if (p.getType() instanceof CodegenRecordType record) {
             // TODO: This is a bug in the old generator - records shouldn't generate arrays
             var functionCall = "() => this.sampleArray" + toUpperCamelCase(getTypeName(record.getAdditionalProperties())) + "()";
-            if (record.getAdditionalProperties() instanceof CodegenInlineEnumType || record.getAdditionalProperties() instanceof CodegenConstantType) {
+            if (record.getAdditionalProperties() instanceof CodegenEmbeddedEnumType || record.getAdditionalProperties() instanceof CodegenConstantType) {
                 functionCall = "() => this.sampleArrayString()";
             } else if (record.getAdditionalProperties() instanceof CodegenRecordType) {
                 functionCall = "() => {\n" +

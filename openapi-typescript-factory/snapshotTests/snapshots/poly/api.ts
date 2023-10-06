@@ -46,7 +46,7 @@ export interface DefaultApiInterface {
      *
      * @throws {HttpError}
      */
-    partiesGet(params?: RequestCallOptions): Promise<AnyPartyDto>;
+    partiesGet(params?: RequestCallOptions): Promise<AnyPartyDto|undefined>;
     /**
      *
      * @param {*} [params] Request parameters, including pathParams, queryParams (including bodyParams) and http options.
@@ -95,7 +95,7 @@ export class DefaultApi extends BaseAPI implements DefaultApiInterface {
      *
      * @throws {HttpError}
      */
-    public async partiesGet(params: RequestCallOptions = {}): Promise<AnyPartyDto> {
+    public async partiesGet(params: RequestCallOptions = {}): Promise<AnyPartyDto|undefined> {
         return await this.fetch(
             this.basePath + "/parties", params
         );

@@ -2,6 +2,12 @@ package org.openapifactory.api.codegen;
 
 import lombok.Data;
 import lombok.ToString;
+import org.openapifactory.api.codegen.types.CodegenAllOfModel;
+import org.openapifactory.api.codegen.types.CodegenEnumModel;
+import org.openapifactory.api.codegen.types.CodegenGenericModel;
+import org.openapifactory.api.codegen.types.CodegenModel;
+import org.openapifactory.api.codegen.types.CodegenOneOfModel;
+import org.openapifactory.api.codegen.types.CodegenTypeRef;
 
 import java.util.ArrayList;
 import java.util.Collection;

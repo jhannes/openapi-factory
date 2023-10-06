@@ -51,7 +51,7 @@ public class ApiTestTsFile implements FileGenerator {
                 "\n" +
                 "import {\n" +
                 "    ApplicationApis,\n" +
-                lines(spec.getApis(), m -> m.getApiName() + "Interface" + ",").indent(4) +
+                lines(spec.getApis(), m -> TypescriptFragments.getApiName(m) + "Interface" + ",").indent(4) +
                 "} from \"../api\";\n");
     }
 
@@ -67,9 +67,9 @@ public class ApiTestTsFile implements FileGenerator {
     private String apiListSection() {
         return "\n" +
                "export function mockApplicationApis({\n" +
-               lines(spec.getApis(), a -> toLowerCamelCase(a.getApiName()) + " = mock" + a.getApiName() + "(),").indent(4) +
+               lines(spec.getApis(), a -> toLowerCamelCase(a.getTag() + "Api") + " = mock" + TypescriptFragments.getApiName(a) + "(),").indent(4) +
                "}: Partial<ApplicationApis> = {}): ApplicationApis {\n" +
-               "    return { " + join(", ", spec.getApis(), a -> toLowerCamelCase(a.getApiName())) + " };\n" +
+               "    return { " + join(", ", spec.getApis(), a -> toLowerCamelCase(a.getTag() + "Api")) + " };\n" +
                "}\n";
     }
 
@@ -78,7 +78,7 @@ public class ApiTestTsFile implements FileGenerator {
     }
 
     private String mockApiSection(CodegenApi api) {
-        var apiName = api.getApiName();
+        var apiName = TypescriptFragments.getApiName(api);
         return "\n" +
                "export function mock" + apiName + "(\n" +
                "    operations: Partial<" + apiName + "Interface> = {}\n" +
@@ -90,4 +90,5 @@ public class ApiTestTsFile implements FileGenerator {
                "    };\n" +
                "}\n";
     }
+
 }

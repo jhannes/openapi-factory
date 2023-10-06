@@ -1,16 +1,17 @@
 package org.openapifactory.typescript;
 
-import org.openapifactory.api.codegen.CodegenAnonymousObjectType;
-import org.openapifactory.api.codegen.CodegenArrayType;
-import org.openapifactory.api.codegen.CodegenConstantType;
-import org.openapifactory.api.codegen.CodegenInlineEnumType;
-import org.openapifactory.api.codegen.CodegenModel;
+import org.openapifactory.api.codegen.types.CodegenAnonymousObjectModel;
+import org.openapifactory.api.codegen.CodegenApi;
+import org.openapifactory.api.codegen.types.CodegenArrayType;
+import org.openapifactory.api.codegen.types.CodegenConstantType;
+import org.openapifactory.api.codegen.types.CodegenEmbeddedEnumType;
+import org.openapifactory.api.codegen.types.CodegenModel;
 import org.openapifactory.api.codegen.CodegenParameter;
-import org.openapifactory.api.codegen.CodegenPrimitiveType;
+import org.openapifactory.api.codegen.types.CodegenPrimitiveType;
 import org.openapifactory.api.codegen.CodegenProp;
-import org.openapifactory.api.codegen.CodegenRecordType;
-import org.openapifactory.api.codegen.CodegenType;
-import org.openapifactory.api.codegen.CodegenTypeRef;
+import org.openapifactory.api.codegen.types.CodegenRecordType;
+import org.openapifactory.api.codegen.types.CodegenType;
+import org.openapifactory.api.codegen.types.CodegenTypeRef;
 import org.openapifactory.api.codegen.OpenapiSpec;
 
 import java.util.List;
@@ -27,6 +28,9 @@ public class TypescriptFragments {
     }
 
     public static String variableName(CodegenType type) {
+        if (type instanceof CodegenAnonymousObjectModel) {
+            return "dto";
+        }
         if (type instanceof CodegenArrayType arrayType) {
             return variableName(arrayType.getItems());
         }
@@ -45,9 +49,9 @@ public class TypescriptFragments {
             return getTypeName(refType.getReferencedType());
         } else if (type instanceof CodegenModel model) {
             return model.getName() + "Dto";
-        } else if (type instanceof CodegenAnonymousObjectType objectType) {
+        } else if (type instanceof CodegenAnonymousObjectModel objectType) {
             return "{ " + join("; ", objectType.getProperties().values(), TypescriptFragments::propertyDefinition) + "; }";
-        } else if (type instanceof CodegenInlineEnumType enumModel) {
+        } else if (type instanceof CodegenEmbeddedEnumType enumModel) {
             if (enumModel.getDeclaredModel() instanceof CodegenModel model) {
                 return getTypeName(model) + toUpperCamelCase(enumModel.getDeclaredProperty().getName()) + "Enum";
             }
@@ -115,5 +119,9 @@ public class TypescriptFragments {
 
     private static String getCollectionType(CodegenArrayType arrayType) {
         return arrayType.isUniqueItems() ? "Set" : "Array";
+    }
+
+    public static String getApiName(CodegenApi api) {
+        return toUpperCamelCase(api.getTag()) + "Api";
     }
 }

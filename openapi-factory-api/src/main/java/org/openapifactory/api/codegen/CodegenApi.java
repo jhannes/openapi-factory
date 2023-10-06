@@ -1,7 +1,6 @@
 package org.openapifactory.api.codegen;
 
 import lombok.Data;
-import org.openapifactory.api.StringUtil;
 
 import java.util.Collection;
 import java.util.Map;
@@ -22,9 +21,5 @@ public class CodegenApi {
 
     public void addOperation(CodegenOperation codegenOperation) {
         this.operations.put(codegenOperation.getOperationId(), codegenOperation);
-    }
-
-    public String getApiName() {
-        return StringUtil.toUpperCamelCase(tag) + "Api";
     }
 }

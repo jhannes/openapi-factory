@@ -1,4 +1,4 @@
-package org.openapifactory.api.codegen;
+package org.openapifactory.api.codegen.types;
 
 public interface CodegenType {
     default boolean hasNoRequiredProperties() {

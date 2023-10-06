@@ -5,6 +5,7 @@ import org.openapifactory.api.codegen.CodegenApi;
 import org.openapifactory.api.codegen.CodegenContent;
 import org.openapifactory.api.codegen.CodegenOperation;
 import org.openapifactory.api.codegen.CodegenParameter;
+import org.openapifactory.api.codegen.CodegenResponse;
 import org.openapifactory.api.codegen.CodegenSecurity;
 import org.openapifactory.api.codegen.OpenapiSpec;
 import org.openapifactory.typescript.TypescriptFragments;
@@ -22,7 +23,7 @@ import static org.openapifactory.api.StringUtil.indent;
 import static org.openapifactory.api.StringUtil.join;
 import static org.openapifactory.api.StringUtil.lines;
 import static org.openapifactory.api.StringUtil.toLowerCamelCase;
-import static org.openapifactory.api.StringUtil.toUpperCamelCase;
+import static org.openapifactory.typescript.TypescriptFragments.getApiName;
 import static org.openapifactory.typescript.TypescriptFragments.getPropName;
 import static org.openapifactory.typescript.TypescriptFragments.getRequestTypeName;
 import static org.openapifactory.typescript.TypescriptFragments.getResponseTypeName;
@@ -76,7 +77,7 @@ public class ApiTsFile implements FileGenerator {
                 "",
                 "export interface ApplicationApis {",
                 lines(spec.getApis(), a
-                        -> "    " + toLowerCamelCase(a.getTag()) + "Api: " + toUpperCamelCase(a.getTag()) + "ApiInterface;"
+                        -> "    " + toLowerCamelCase(a.getTag()) + "Api: " + getApiName(a) + "Interface;"
                 ),
                 "}",
                 ""
@@ -95,9 +96,9 @@ public class ApiTsFile implements FileGenerator {
     private static String interfaceDefinition(CodegenApi api) {
         return "\n" +
                "/**\n" +
-               " * " + api.getApiName() + " - object-oriented interface\n" +
+               " * " + getApiName(api) + " - object-oriented interface\n" +
                " */\n" +
-               "export interface " + api.getApiName() + "Interface {\n" +
+               "export interface " + getApiName(api) + "Interface {\n" +
                indent(4, api.getOperations(), ApiTsFile::operationDeclaration) +
                "}\n";
     }
@@ -114,15 +115,15 @@ public class ApiTsFile implements FileGenerator {
                (params.isEmpty()
                        ? "(params?: RequestCallOptions)" :
                        "(params" + (op.hasOnlyOptionalParams() ? "?" : "") + ": {\n" + params + "} & RequestCallOptions)")
-               + ": Promise<" + getResponseType(op.getResponseType()) + ">;\n";
+               + ": Promise<" + getResponseType(op) + ">;\n";
     }
 
     private static String apiImplementation(CodegenApi api) {
         return ("\n" +
                 "/**\n" +
-                " * " + api.getApiName() + " - object-oriented interface\n" +
+                " * " + getApiName(api) + " - object-oriented interface\n" +
                 " */\n" +
-                "export class " + api.getApiName() + " extends BaseAPI implements " + api.getApiName() + "Interface {\n" +
+                "export class " + getApiName(api) + " extends BaseAPI implements " + getApiName(api) + "Interface {\n" +
                 indent(4, api.getOperations(), ApiTsFile::operationImplementation) +
                 "}\n");
     }
@@ -140,7 +141,7 @@ public class ApiTsFile implements FileGenerator {
                (params.isEmpty()
                        ? "(params: RequestCallOptions = {})"
                        : "(params" + (op.hasOnlyOptionalParams() ? "?" : "") + ": {\n" + params + "} & RequestCallOptions)") +
-               ": Promise<" + getResponseType(op.getResponseType()) + "> {\n" +
+               ": Promise<" + getResponseType(op) + "> {\n" +
                functionBody(op, op.getRequestBody()).indent(4) +
                "}\n";
     }
@@ -188,18 +189,18 @@ public class ApiTsFile implements FileGenerator {
         if (requestBody != null || !op.getSecurity().isEmpty()) {
             return
                     "return await this.fetch(\n" +
-                     "    " + fetchExpression + ",\n" +
-                     "    {\n" +
-                     "        ...params,\n" +
-                     (op.isGET() ? "" : "        method: \"" + op.getMethod() + "\",\n") +
-                     (requestBody == null ? "" : "        body: " + requestBodyExpression(op, requestBody) + ",\n") +
-                     "        headers: {\n" +
-                     "            ...this.removeEmpty(params" + (op.hasOnlyOptionalParams() ? "?" : "") + ".headers),\n" +
-                     (op.getSecurity().isEmpty() ? "" : "            ...params.security?.headers(),\n") +
-                     (requestBody == null ? "" : "            \"Content-Type\": \"" + requestBody.getContentType() + "\",\n") +
-                     "        },\n" +
-                     "    }\n" +
-                     ");\n";
+                    "    " + fetchExpression + ",\n" +
+                    "    {\n" +
+                    "        ...params,\n" +
+                    (op.isGET() ? "" : "        method: \"" + op.getMethod().toUpperCase() + "\",\n") +
+                    (requestBody == null ? "" : "        body: " + requestBodyExpression(op, requestBody) + ",\n") +
+                    "        headers: {\n" +
+                    "            ...this.removeEmpty(params" + (op.hasOnlyOptionalParams() ? "?" : "") + ".headers),\n" +
+                    (op.getSecurity().isEmpty() ? "" : "            ...params.security?.headers(),\n") +
+                    (requestBody == null ? "" : "            \"Content-Type\": \"" + requestBody.getContentType() + "\",\n") +
+                    "        },\n" +
+                    "    }\n" +
+                    ");\n";
         } else if (op.isGET()) {
             return "return await this.fetch(\n" +
                    "    " + fetchExpression + ", params\n" +
@@ -209,7 +210,7 @@ public class ApiTsFile implements FileGenerator {
                    "    " + fetchExpression + ",\n" +
                    "    {\n" +
                    "        ...params,\n" +
-                   "        method: \"" + op.getMethod() + "\",\n" +
+                   "        method: \"" + op.getMethod().toUpperCase() + "\",\n" +
                    "    }\n" +
                    ");\n";
         }
@@ -264,8 +265,14 @@ public class ApiTsFile implements FileGenerator {
         return !p.isExplode() || p.getType().isDate() || (p.getStyle() != null && processedStyles.contains(p.getStyle()));
     }
 
-    private static String getResponseType(CodegenContent responseType) {
-        return responseType == null ? "void" : getResponseTypeName(responseType.getType());
+    private static String getResponseType(CodegenOperation operation) {
+        if (operation.getResponses().stream().allMatch(r -> r.getResponseTypes().isEmpty() || r.is4xx())) {
+            return "void";
+        }
+        return operation.getResponses().stream()
+                .filter(CodegenResponse::is2xx)
+                .map(o -> o.getResponseTypes().isEmpty() ? "undefined" : (getResponseTypeName(o.getContent().getType())))
+                .collect(Collectors.joining("|"));
     }
 
     protected String serverSection() {
@@ -281,7 +288,7 @@ public class ApiTsFile implements FileGenerator {
                             var serverName = s.getDescription() == null ? "default" : "\"" + s.getDescription() + "\"";
                             return serverName + ": {\n" +
                                    indent(4, spec.getApis(), api ->
-                                           toLowerCamelCase(api.getApiName()) + ": new " + api.getApiName() + "(\"" + s.getUrl() + "\"),\n") +
+                                           toLowerCamelCase(api.getTag() + "Api") + ": new " + getApiName(api) + "(\"" + s.getUrl() + "\"),\n") +
                                    "},\n";
                         }
                 ) +
