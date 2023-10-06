@@ -1,6 +1,7 @@
 package org.openapifactory.api.codegen;
 
 import lombok.Data;
+import lombok.ToString;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -11,7 +12,9 @@ import static org.openapifactory.api.StringUtil.toUpperCamelCase;
 @Data
 public class CodegenInlineEnumType implements CodegenModel, CodegenEnum {
     private String type;
-    private CodegenPropertyMap declaredModel;
+    @ToString.Exclude
+    private CodegenPropertyModel declaredModel;
+    @ToString.Exclude
     private CodegenProp declaredProperty;
     private final List<String> values = new ArrayList<>();
     private String description;

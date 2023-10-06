@@ -1,9 +1,13 @@
 package org.openapifactory.api.codegen;
 
 import lombok.Data;
+import lombok.ToString;
 
 @Data
 public class CodegenParameter implements CodegenProp {
+    @ToString.Exclude
+    private final OpenapiSpec spec;
+
     public enum ParameterLocation {
         cookie, header, path, query
     }

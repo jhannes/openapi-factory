@@ -13,12 +13,14 @@ import static org.openapifactory.api.StringUtil.toUpperCamelCase;
 @Data
 @ToString(of = {"method", "path", "operationId"})
 public class CodegenOperation {
+    private final OpenapiSpec spec;
     private final String method, path;
     private String operationId;
     private String summary;
     private final List<CodegenSecurity> security = new ArrayList<>();
 
-    public CodegenOperation(String method, String path) {
+    public CodegenOperation(OpenapiSpec spec, String method, String path) {
+        this.spec = spec;
         this.method = method.toUpperCase();
         this.path = path;
         this.operationId = inlinePathParams(camelCaseSlashes(path)) + toUpperCamelCase(method);
@@ -55,19 +57,19 @@ public class CodegenOperation {
     }
 
     public CodegenParameter addParameter(String name) {
-        var parameter = new CodegenParameter(name);
+        var parameter = new CodegenParameter(spec, name);
         parameters.add(parameter);
         return parameter;
     }
 
     public CodegenContent addRequestBody(String contentType) {
-        var content = new CodegenContent(contentType);
+        var content = new CodegenContent(spec, contentType);
         getRequestBodies().put(contentType, content);
         return content;
     }
 
     public CodegenContent addResponseType(String contentType) {
-        var content = new CodegenContent(contentType);
+        var content = new CodegenContent(spec, contentType);
         getResponseTypes().put(contentType, content);
         return content;
     }

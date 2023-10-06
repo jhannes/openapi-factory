@@ -9,7 +9,7 @@ import org.openapifactory.api.codegen.CodegenOperation;
 import org.openapifactory.api.codegen.CodegenParameter;
 import org.openapifactory.api.codegen.CodegenPrimitiveType;
 import org.openapifactory.api.codegen.CodegenProp;
-import org.openapifactory.api.codegen.CodegenPropertyMap;
+import org.openapifactory.api.codegen.CodegenPropertyModel;
 import org.openapifactory.api.codegen.CodegenRecordType;
 import org.openapifactory.api.codegen.CodegenType;
 import org.openapifactory.api.codegen.CodegenTypeRef;
@@ -69,6 +69,7 @@ public class OpenapiSpecParser {
         } else if (node.containsKey("enum")) {
             var enumModel = spec.addEnumModel(modelName);
             enumModel.getValues().addAll(node.sequenceNode("enum").required().stringList());
+            enumModel.setType(node.string("type").orElse("string"));
             node.string("description").ifPresent(enumModel::setDescription);
         } else if (node.containsKey("allOf")) {
             var allOf = spec.addAllOfModel(modelName);
@@ -102,20 +103,22 @@ public class OpenapiSpecParser {
         }
     }
 
-    private static void readProperties(SpecMappingNode node, CodegenPropertyMap model) {
+    private static void readProperties(SpecMappingNode node, CodegenPropertyModel model) {
         var required = node.sequenceNode("required")
                 .map(SpecSequenceNode::stringList)
                 .orElse(List.of());
         var properties = node.mappingNode("properties").required();
         for (var name : properties.keySet()) {
-            var codegen = model.addProperty(name);
+            var prop = model.addProperty(name);
             if (required.contains(name)) {
-                codegen.setRequired(true);
+                prop.setRequired(true);
             }
             var propNode = properties.mappingNode(name).required();
-            codegen.setDescription(propNode.string("description").orNull());
-            codegen.setExample(propNode.string("example").orNull());
-            codegen.setType(getType(propNode, model, codegen));
+            prop.setDescription(propNode.string("description").orNull());
+            prop.setExample(propNode.string("example").orNull());
+            prop.setType(getType(prop.getSpec(), propNode, model, prop));
+            prop.setReadOnly(propNode.getBoolean("readOnly").orElse(false));
+            prop.setWriteOnly(propNode.getBoolean("writeOnly").orElse(false));
         }
     }
 
@@ -148,7 +151,8 @@ public class OpenapiSpecParser {
                 codegenParameter.setIn(parameter.getEnum("in", CodegenParameter.ParameterLocation.class).required());
                 codegenParameter.setExplode(parameter.getBoolean("explode").orElse(true));
                 codegenParameter.setStyle(parameter.getEnum("style", CodegenParameter.Style.class).orNull());
-                codegenParameter.setType(getType(parameter.mappingNode("schema").required(), null, codegenParameter));
+                var schema = parameter.mappingNode("schema").required();
+                codegenParameter.setType(getType(operation.getSpec(), schema, null, codegenParameter));
             }
         }
 
@@ -158,7 +162,8 @@ public class OpenapiSpecParser {
             for (var contentType : content.keySet()) {
                 var codegenContent = operation.addRequestBody(contentType);
                 codegenContent.setRequired(requestBody.getBoolean("required").orElse(false));
-                codegenContent.setType(getType((content.mappingNode(contentType).required()).mappingNode("schema").required(), null, null));
+                var schema = (content.mappingNode(contentType).required()).mappingNode("schema").required();
+                codegenContent.setType(getType(operation.getSpec(), schema, null, null));
             }
         }
         if (operationNode.containsKey("responses")) {
@@ -171,7 +176,7 @@ public class OpenapiSpecParser {
                         for (var contentType : content.keySet()) {
                             var codegenContent = operation.addResponseType(contentType);
                             var schema = content.mappingNode(contentType).required().mappingNode("schema").required();
-                            codegenContent.setType(getType(schema, null, null));
+                            codegenContent.setType(getType(operation.getSpec(), schema, null, null));
                         }
                     }
                 }
@@ -204,11 +209,9 @@ public class OpenapiSpecParser {
 
 
 
-    private static CodegenType getType(SpecMappingNode schema, CodegenPropertyMap model, CodegenProp prop) {
-        var $ref = schema.string("$ref");
-
-        if ($ref.isPresent()) {
-            return new CodegenTypeRef($ref.required());
+    private static CodegenType getType(OpenapiSpec spec, SpecMappingNode schema, CodegenPropertyModel model, CodegenProp prop) {
+        if (schema.containsKey("$ref")) {
+            return new CodegenTypeRef(spec, schema.string("$ref").required());
         }
         if (schema.containsKey("enum")) {
             var values = schema.sequenceNode("enum").required().stringList();
@@ -223,19 +226,19 @@ public class OpenapiSpecParser {
             schema.string("description").ifPresent(result::setDescription);
             return result;
         } else if (schema.containsKey("properties")) {
-            var result = new CodegenInlineObjectType();
+            var result = new CodegenInlineObjectType(spec);
             readProperties(schema, result);
             return result;
         } else if (schema.containsKey("additionalProperties")) {
             var result = new CodegenRecordType();
-            result.setAdditionalProperties(getType(schema.mappingNode("additionalProperties").required(), model, prop));
+            result.setAdditionalProperties(getType(spec, schema.mappingNode("additionalProperties").required(), model, prop));
             return result;
         } else {
             var type = schema.string("type").required();
             if ("array".equals(type)) {
                 var result = new CodegenArrayType();
                 result.setUniqueItems(schema.getBoolean("uniqueItems").orElse(false));
-                result.setItems(getType(schema.mappingNode("items").required(), model, prop));
+                result.setItems(getType(spec, schema.mappingNode("items").required(), model, prop));
                 return result;
             } else {
                 var result = new CodegenPrimitiveType();

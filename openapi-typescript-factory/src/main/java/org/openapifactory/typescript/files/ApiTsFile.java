@@ -25,9 +25,9 @@ import static org.openapifactory.api.StringUtil.lines;
 import static org.openapifactory.api.StringUtil.toLowerCamelCase;
 import static org.openapifactory.api.StringUtil.toUpperCamelCase;
 import static org.openapifactory.typescript.TypescriptFragments.getName;
+import static org.openapifactory.typescript.TypescriptFragments.getRequestTypeName;
 import static org.openapifactory.typescript.TypescriptFragments.getTypeName;
 import static org.openapifactory.typescript.TypescriptFragments.propertiesDefinition;
-import static org.openapifactory.typescript.TypescriptFragments.propertyDefinition;
 
 public class ApiTsFile implements FileGenerator {
 
@@ -60,15 +60,14 @@ public class ApiTsFile implements FileGenerator {
     }
 
     protected String importSection() {
-        var imports = lines(spec.getModels(), m -> "    " + m.getName() + ",");
-        return """
-                                
-                import {
-                %s
-                } from "./model";
-                                
-                import { BaseAPI, RequestCallOptions, SecurityScheme } from "./base";
-                """.formatted(imports);
+        return "\n" +
+               "import {\n" +
+               indent(4, spec.getModels(), m ->
+                       m.getName() + ",\n" +
+                       (m.hasReadOnlyProperties() ? (m.getName() + "Request,\n") : "")
+               ) + "} from \"./model\";\n" +
+               "\n" +
+               "import { BaseAPI, RequestCallOptions, SecurityScheme } from \"./base\";\n";
     }
 
     protected String apiListSection() {
@@ -103,7 +102,7 @@ public class ApiTsFile implements FileGenerator {
     }
 
     private static String operationDeclaration(CodegenOperation op) {
-        var params = operationParameters(op);
+        var params = operationParameters(op).indent(4);
         return "/**\n" +
                " *\n" +
                (op.getSummary() != null ? " * @summary " + op.getSummary() + "\n" : "") +
@@ -128,7 +127,7 @@ public class ApiTsFile implements FileGenerator {
     }
 
     private static String operationImplementation(CodegenOperation op) {
-        var params = operationParameters(op);
+        var params = operationParameters(op).indent(4);
 
         return "/**\n" +
                " *\n" +
@@ -148,19 +147,23 @@ public class ApiTsFile implements FileGenerator {
     private static String operationParameters(CodegenOperation op) {
         var params = "";
         if (!op.getPathParams().isEmpty()) {
-            params += paramsDefinition("pathParams", op.getPathParams()).indent(4);
+            params += paramsDefinition("pathParams", op.getPathParams());
         }
         if (!op.getQueryParams().isEmpty()) {
-            params += paramsDefinition("queryParams", op.getQueryParams()).indent(4);
+            params += paramsDefinition("queryParams", op.getQueryParams());
         }
         if (op.getRequestBody() != null) {
-            params += (propertyDefinition(op.getRequestBody()) + ";").indent(4);
+            var p = op.getRequestBody();
+            params += getName(p) +
+                      (p.isRequired() && p.getType().hasNoRequiredProperties() ? "" : "?") +
+                      ": " + getRequestTypeName(p.getType()) +
+                      ";\n";
         }
         if (!op.getHeaderParams().isEmpty()) {
-            params += paramsDefinitionWithQuotes("headers", op.getHeaderParams()).indent(4);
+            params += paramsDefinitionWithQuotes("headers", op.getHeaderParams());
         }
         if (!op.getSecurity().isEmpty()) {
-            params += "    security: " + join(" | ", op.getSecurity(), CodegenSecurity::getName) + ";\n";
+            params += "security: " + join(" | ", op.getSecurity(), CodegenSecurity::getName) + ";\n";
         }
         return params;
     }
@@ -226,7 +229,7 @@ public class ApiTsFile implements FileGenerator {
         return paramName +
                (params.stream().noneMatch(CodegenParameter::isRequired) ? "?" : "") + ": { " +
                propertiesDefinition(params) +
-               ", };";
+               ", };\n";
     }
 
     private static String paramsDefinitionWithQuotes(String paramName, List<CodegenParameter> params) {
@@ -234,7 +237,7 @@ public class ApiTsFile implements FileGenerator {
                (params.stream().noneMatch(CodegenParameter::isRequired) ? "?" : "") + ": { " +
                join(", ", params, p ->
                        '"' + getName(p) + '"' + (p.isRequired() ? "" : "?") + ": " + getTypeName(p.getType())) +
-               ", };";
+               ", };\n";
     }
 
     private static String getQueryOptions(CodegenParameter p) {
@@ -247,7 +250,7 @@ public class ApiTsFile implements FileGenerator {
         if (!p.isExplode()) {
             options.add("explode: false");
         }
-        if (p.isDate()) {
+        if (p.getType().isDate()) {
             options.add("format: \"date\"");
         }
         return p.getName() + ": " + "{ " + String.join(", ", options) + " },\n";
@@ -255,7 +258,7 @@ public class ApiTsFile implements FileGenerator {
 
     private static boolean hasQueryOptions(CodegenParameter p) {
         var processedStyles = Set.of(CodegenParameter.Style.pipeDelimited, CodegenParameter.Style.spaceDelimited);
-        return !p.isExplode() || p.isDate() || (p.getStyle() != null && processedStyles.contains(p.getStyle()));
+        return !p.isExplode() || p.getType().isDate() || (p.getStyle() != null && processedStyles.contains(p.getStyle()));
     }
 
     private static String getResponseType(CodegenProp responseType) {
@@ -276,7 +279,7 @@ public class ApiTsFile implements FileGenerator {
                             return serverName + ": {\n" +
                                    indent(4, spec.getApis(), api ->
                                            toLowerCamelCase(api.getApiName()) + ": new " + api.getApiName() + "(\"" + s.getUrl() + "\"),\n") +
-                                   "},";
+                                   "},\n";
                         }
                 ) +
                 "};\n" +

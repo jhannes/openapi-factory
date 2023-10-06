@@ -5,12 +5,13 @@ import lombok.ToString;
 import org.openapifactory.api.Maybe;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 
 @Data
-public class CodegenAllOfModel implements CodegenModel, CodegenPropertyModel {
+public class CodegenAllOfModel implements CodegenPropertyModel {
     @ToString.Exclude
     private final OpenapiSpec spec;
     private final String name;
@@ -19,11 +20,11 @@ public class CodegenAllOfModel implements CodegenModel, CodegenPropertyModel {
     private final Set<String> required = new LinkedHashSet<>();
 
     public void addRefSuperModel(String ref) {
-        refSuperModels.add(new CodegenTypeRef(ref));
+        refSuperModels.add(new CodegenTypeRef(spec, ref));
     }
 
     public CodegenInlineObjectType addSuperModel() {
-        var result = new CodegenInlineObjectType();
+        var result = new CodegenInlineObjectType(spec);
         result.setName(getName());
         inlineSuperModels.add(result);
         return result;
@@ -51,12 +52,44 @@ public class CodegenAllOfModel implements CodegenModel, CodegenPropertyModel {
             }
         }
         for (var refSuperModel : refSuperModels) {
-            var superModel = (CodegenPropertyModel)spec.getModel(refSuperModel);
+            var superModel = (CodegenPropertyModel)refSuperModel.getReferencedType();
             var match = superModel.getProperty(name);
             if (match.isPresent()) {
                 return match;
             }
         }
         return Maybe.missing("No property [" + name + "] in " + getName());
+    }
+
+    @Override
+    public CodegenProperty addProperty(String name) {
+        throw new RuntimeException("Should be implemented");
+    }
+
+    @Override
+    public boolean hasReadOnlyProperties() {
+        return !getOmittedPropertiesForReadOnly().isEmpty();
+    }
+
+    @Override
+    public Collection<CodegenProperty> getAllProperties() {
+        var result = new ArrayList<CodegenProperty>();
+        getRefSuperModels().stream()
+                .map(superModel -> (CodegenPropertyModel)superModel.getReferencedType())
+                .forEach(superModel -> result.addAll(superModel.getAllProperties()));
+        result.addAll(getOwnProperties());
+        return result;
+    }
+
+    public List<CodegenProperty> getReferencesWithReadOnlyProperties() {
+        return getAllProperties().stream()
+                .filter(p -> p.getType().hasReadOnlyProperties())
+                .toList();
+    }
+
+    public List<CodegenProperty> getOmittedPropertiesForReadOnly() {
+        return getAllProperties().stream()
+                .filter(p -> p.getType().hasReadOnlyProperties() || (p.isReadOnly() && p.isRequired()))
+                .toList();
     }
 }

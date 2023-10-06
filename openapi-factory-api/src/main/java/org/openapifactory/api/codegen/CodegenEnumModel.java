@@ -8,6 +8,7 @@ import java.util.List;
 @Data
 public class CodegenEnumModel implements CodegenModel, CodegenEnum {
     private final String name;
+    private String type;
     private final List<String> values = new ArrayList<>();
     private String description;
 }

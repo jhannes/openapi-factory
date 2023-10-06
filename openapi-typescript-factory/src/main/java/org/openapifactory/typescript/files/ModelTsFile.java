@@ -22,6 +22,7 @@ import java.util.Collection;
 
 import static org.openapifactory.api.StringUtil.indent;
 import static org.openapifactory.api.StringUtil.join;
+import static org.openapifactory.typescript.TypescriptFragments.getRequestTypeName;
 import static org.openapifactory.typescript.TypescriptFragments.getTypeName;
 import static org.openapifactory.typescript.TypescriptFragments.propertyDefinition;
 
@@ -63,7 +64,8 @@ public class ModelTsFile implements FileGenerator {
     private static String enumDeclaration(CodegenEnum enumType) {
         var name = enumType.getName();
         return "export const " + name + "Values = [\n" +
-               indent(4, enumType.getValues(), s -> "\"" + s + "\",\n") +
+               indent(4, enumType.getValues(),
+                       s -> enumType.isString() ? "\"" + s + "\",\n" : s + ",\n") +
                "] as const;\n" +
                "\n" +
                docString(enumType.getDescription()) +
@@ -73,10 +75,34 @@ public class ModelTsFile implements FileGenerator {
     protected String modelGenericSection(CodegenGenericModel generic) {
         var result = "\n" + docString(generic.getDescription()) +
                      "export interface " + generic.getName() + " {\n" +
-                     join(generic.getProperties().values(), this::modelPropertyDefinition) +
+                     join(generic.getAllProperties(), this::modelPropertyDefinition) +
                      "}\n";
-        result += inlineEnumSection(generic.getProperties().values());
+        result += readOnlySection(generic);
+        result += inlineEnumSection(generic.getAllProperties());
         return result;
+    }
+
+    private String readOnlySection(CodegenModel model) {
+        if (!model.hasReadOnlyProperties()) {
+            return "";
+        }
+        if (model instanceof CodegenGenericModel generic) {
+            return "\nexport type " + generic.getName() + "Request = " +
+                   "Omit<" + generic.getName() + ", " +
+                   join("|", generic.getOmittedPropertiesForReadOnly(), p -> "\"" + p.getName() + "\"") + ">" +
+                   join(generic.getReferencesWithReadOnlyProperties(), p -> "\n    & { " + p.getName() + ": " + getRequestTypeName(p.getType()) + " }") +
+                   ";\n";
+        } else if (model instanceof CodegenOneOfModel oneOf) {
+            return "\nexport type " + oneOf.getName() + "Request = " + "SOMETHING;";
+        } else if (model instanceof CodegenAllOfModel allOf) {
+            return "\nexport type " + allOf.getName() + "Request = " +
+                   "Omit<" + allOf.getName() + ", " +
+                   join("|", allOf.getOmittedPropertiesForReadOnly(), p -> "\"" + p.getName() + "\"") + ">" +
+                   join(allOf.getReferencesWithReadOnlyProperties(), p -> "\n    & { " + p.getName() + ": " + getRequestTypeName(p.getType()) + " }") +
+                   ";\n";
+        } else {
+            throw new IllegalArgumentException(model.toString());
+        }
     }
 
     private static String inlineEnumSection(Collection<CodegenProperty> properties) {
@@ -98,21 +124,22 @@ public class ModelTsFile implements FileGenerator {
             return "\n" +
                    "export type " + allOf.getName() + " = " +
                    join(" & ", allOf.getRefSuperModels(), m -> m.getClassName() + "Dto") +
-                   ";\n" + inlineEnumSection(allOf.getOwnProperties());
+                   ";\n" + readOnlySection(allOf) + inlineEnumSection(allOf.getOwnProperties());
         } else if (allOf.getRefSuperModels().size() == 1) {
             var superClass = (CodegenTypeRef) allOf.getRefSuperModels().get(0);
             return "\n" +
                    "export interface " + allOf.getName() + " extends " + superClass.getClassName() + "Dto {\n" +
                    indent(4, allOf.getOwnProperties(), p -> propertyDefinition(p) + ";\n") +
-                   "}\n" + inlineEnumSection(allOf.getOwnProperties());
+                   "}\n" + readOnlySection(allOf) + inlineEnumSection(allOf.getOwnProperties());
         } else {
             return "\n" +
                    "export type " + allOf.getName() + " = " +
                    join(" & ", allOf.getRefSuperModels(), m -> m.getClassName() + "Dto") +
                    " & {\n" +
                    indent(4, allOf.getOwnProperties(), p -> propertyDefinition(p) + ";\n") +
-                   "};\n"
-                   + inlineEnumSection(allOf.getOwnProperties());
+                   "};\n" +
+                   readOnlySection(allOf) +
+                   inlineEnumSection(allOf.getOwnProperties());
         }
     }
 

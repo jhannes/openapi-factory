@@ -21,7 +21,7 @@ import static org.openapifactory.api.StringUtil.join;
 
 public class TypescriptFragments {
     public static String propertyDefinition(CodegenProp p) {
-        return getName(p) + (p.isRequired() && !p.getType().hasOnlyOptionalProperties() ? "" : "?") + ": " + getTypeName(p.getType());
+        return getName(p) + (p.isRequired() && p.getType().hasNoRequiredProperties() ? "" : "?") + ": " + getTypeName(p.getType());
     }
 
     public static String getName(CodegenProp p) {
@@ -81,5 +81,14 @@ public class TypescriptFragments {
                  * Do not edit the class manually.
                  */
                 """.formatted(spec.getTitle(), spec.getDescription(), spec.getVersion(), contact);
+    }
+
+    public static String getRequestTypeName(CodegenType type) {
+        if (!type.hasReadOnlyProperties()) {
+            return getTypeName(type);
+        } else if (type instanceof CodegenArrayType arrayType) {
+            return (arrayType.isUniqueItems() ? "Set" : "Array") + "<" + getRequestTypeName(arrayType.getItems()) + ">";
+        }
+        return getTypeName(type) + "Request";
     }
 }

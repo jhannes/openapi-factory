@@ -6,6 +6,8 @@ import org.openapifactory.api.StringUtil;
 
 @Data
 public class CodegenContent implements CodegenProp {
+    @ToString.Exclude
+    private final OpenapiSpec spec;
     private final String contentType;
     @ToString.Exclude
     private CodegenType type;

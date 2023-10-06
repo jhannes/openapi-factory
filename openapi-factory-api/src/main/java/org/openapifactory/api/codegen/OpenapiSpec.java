@@ -44,11 +44,11 @@ public class OpenapiSpec {
     }
 
     public CodegenOperation createOperation(String method, String path) {
-        return new CodegenOperation(method, path);
+        return new CodegenOperation(this, method, path);
     }
 
     public CodegenGenericModel addGenericModel(String modelName) {
-        return addModel(new CodegenGenericModel(modelName + modelSuffix));
+        return addModel(new CodegenGenericModel(this, modelName + modelSuffix));
     }
 
     public CodegenEnumModel addEnumModel(String modelName) {

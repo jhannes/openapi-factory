@@ -381,7 +381,9 @@ export class StoreApi extends BaseAPI implements StoreApiInterface {
         security: api_key;
     } & RequestCallOptions): Promise<{ [key: string]: number; }> {
         return await this.fetch(
-            this.url("/store/inventory", {}, params?.queryParams, {}),
+            this.url("/store/inventory", {}, params?.queryParams, {
+                effectiveDateTime: { format: "date" },
+            }),
             {
                 ...params,
                 headers: {

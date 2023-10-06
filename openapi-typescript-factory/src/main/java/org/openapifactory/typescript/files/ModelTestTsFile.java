@@ -59,7 +59,7 @@ public class ModelTestTsFile implements FileGenerator {
 
     private String importInlineEnumValues(CodegenModel model) {
         if (model instanceof CodegenGenericModel generic) {
-            return generic.getProperties().values().stream()
+            return generic.getAllProperties().stream()
                     .map(CodegenProperty::getType)
                     .filter(p -> p instanceof CodegenInlineEnumType)
                     .map(t -> ((CodegenInlineEnumType) t))
@@ -383,7 +383,7 @@ public class ModelTestTsFile implements FileGenerator {
                     "        return this.sampleModelProperties[containerClass](this);\n" +
                     "    }\n" +
                     "    return {\n" +
-                    indent(8, generic.getProperties().values(), ModelTestTsFile::propertyFactory) +
+                    indent(8, generic.getAllProperties(), ModelTestTsFile::propertyFactory) +
                     "    };\n" +
                     "}").indent(4) +
                    "\n" + modelArrayFactory(model).indent(4);
@@ -514,14 +514,18 @@ public class ModelTestTsFile implements FileGenerator {
                    "),\n";
         } else if (p.getType() instanceof CodegenRecordType record) {
             // TODO: This is a bug in the old generator - records shouldn't generate arrays
-            var functionCall = "sampleArray" + toUpperCamelCase(getTypeName(record.getAdditionalProperties()));
+            var functionCall = "() => this.sampleArray" + toUpperCamelCase(getTypeName(record.getAdditionalProperties())) + "()";
             if (record.getAdditionalProperties() instanceof CodegenInlineEnumType || record.getAdditionalProperties() instanceof CodegenConstantType) {
-                functionCall = "sampleArrayString";
+                functionCall = "() => this.sampleArrayString()";
+            } else if (record.getAdditionalProperties() instanceof CodegenRecordType) {
+                functionCall = "() => {\n" +
+                       "        throw new Error(\"Can't automatically generate for " + getTypeName(record) + "\");\n" +
+                       "    }";
             }
             return p.getName() + ": this.generate(\n" +
                    "    template?." + p.getName() + ",\n" +
                    "    { containerClass, propertyName: \"" + p.getName() + "\", example: null, isNullable: false },\n" +
-                   "    () => this." + functionCall + "()\n" +
+                   "    " + functionCall + "\n" +
                    "),\n";
         }
         return p.getName() + ": this.generate(\n" +

@@ -6,12 +6,4 @@ public interface CodegenProp {
     boolean isRequired();
 
     CodegenType getType();
-
-    default boolean isDate() {
-        if (getType() instanceof CodegenPrimitiveType type) {
-            return "string".equals(type.getType()) && "date".equals(type.getFormat());
-        } else {
-            return false;
-        }
-    }
 }
