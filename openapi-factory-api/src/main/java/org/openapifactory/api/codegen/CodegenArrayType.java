@@ -8,8 +8,18 @@ public class CodegenArrayType implements CodegenType {
     private CodegenType items;
 
     @Override
+    public boolean hasNoRequiredProperties() {
+        return items.hasNoRequiredProperties();
+    }
+
+    @Override
     public boolean hasReadOnlyProperties() {
         return items.hasReadOnlyProperties();
+    }
+
+    @Override
+    public boolean hasWriteOnlyProperties() {
+        return items.hasWriteOnlyProperties();
     }
 
     @Override

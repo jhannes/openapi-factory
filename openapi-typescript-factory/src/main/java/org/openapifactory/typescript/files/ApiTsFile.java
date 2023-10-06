@@ -5,7 +5,6 @@ import org.openapifactory.api.codegen.CodegenApi;
 import org.openapifactory.api.codegen.CodegenContent;
 import org.openapifactory.api.codegen.CodegenOperation;
 import org.openapifactory.api.codegen.CodegenParameter;
-import org.openapifactory.api.codegen.CodegenProp;
 import org.openapifactory.api.codegen.CodegenSecurity;
 import org.openapifactory.api.codegen.OpenapiSpec;
 import org.openapifactory.typescript.TypescriptFragments;
@@ -24,8 +23,9 @@ import static org.openapifactory.api.StringUtil.join;
 import static org.openapifactory.api.StringUtil.lines;
 import static org.openapifactory.api.StringUtil.toLowerCamelCase;
 import static org.openapifactory.api.StringUtil.toUpperCamelCase;
-import static org.openapifactory.typescript.TypescriptFragments.getName;
+import static org.openapifactory.typescript.TypescriptFragments.getPropName;
 import static org.openapifactory.typescript.TypescriptFragments.getRequestTypeName;
+import static org.openapifactory.typescript.TypescriptFragments.getResponseTypeName;
 import static org.openapifactory.typescript.TypescriptFragments.getTypeName;
 import static org.openapifactory.typescript.TypescriptFragments.propertiesDefinition;
 
@@ -63,8 +63,9 @@ public class ApiTsFile implements FileGenerator {
         return "\n" +
                "import {\n" +
                indent(4, spec.getModels(), m ->
-                       m.getName() + ",\n" +
-                       (m.hasReadOnlyProperties() ? (m.getName() + "Request,\n") : "")
+                       getTypeName(m) + ",\n" +
+                       (m.hasWriteOnlyProperties() ? (getResponseTypeName(m) + ",\n") : "" )+
+                       (m.hasReadOnlyProperties() ? (getRequestTypeName(m) + ",\n") : "")
                ) + "} from \"./model\";\n" +
                "\n" +
                "import { BaseAPI, RequestCallOptions, SecurityScheme } from \"./base\";\n";
@@ -154,7 +155,8 @@ public class ApiTsFile implements FileGenerator {
         }
         if (op.getRequestBody() != null) {
             var p = op.getRequestBody();
-            params += getName(p) +
+            var propName = p.isFormContent() ? "formParams" : TypescriptFragments.variableName(p.getType());
+            params += propName +
                       (p.isRequired() && p.getType().hasNoRequiredProperties() ? "" : "?") +
                       ": " + getRequestTypeName(p.getType()) +
                       ";\n";
@@ -214,13 +216,14 @@ public class ApiTsFile implements FileGenerator {
     }
 
     private static String requestBodyExpression(CodegenOperation op, CodegenContent requestBody) {
+        var propName = TypescriptFragments.variableName(requestBody.getType());
         return switch (requestBody.getContentType()) {
             case "application/x-www-form-urlencoded" -> "this.formData(params.formParams)";
             case "multipart/form-data" -> "this.formData(params.formParams)";
             case "application/json" ->
                     op.hasOnlyOptionalParams()
-                            ? "params?." + getName(requestBody) + " ? JSON.stringify(params." + getName(requestBody) + ") : undefined"
-                            : "JSON.stringify(params." + getName(requestBody) + ")";
+                            ? "params?." + propName + " ? JSON.stringify(params." + propName + ") : undefined"
+                            : "JSON.stringify(params." + propName + ")";
             default -> throw new RuntimeException();
         };
     }
@@ -236,7 +239,7 @@ public class ApiTsFile implements FileGenerator {
         return paramName +
                (params.stream().noneMatch(CodegenParameter::isRequired) ? "?" : "") + ": { " +
                join(", ", params, p ->
-                       '"' + getName(p) + '"' + (p.isRequired() ? "" : "?") + ": " + getTypeName(p.getType())) +
+                       '"' + getPropName(p) + '"' + (p.isRequired() ? "" : "?") + ": " + getTypeName(p.getType())) +
                ", };\n";
     }
 
@@ -261,8 +264,8 @@ public class ApiTsFile implements FileGenerator {
         return !p.isExplode() || p.getType().isDate() || (p.getStyle() != null && processedStyles.contains(p.getStyle()));
     }
 
-    private static String getResponseType(CodegenProp responseType) {
-        return responseType == null ? "void" : getTypeName(responseType.getType());
+    private static String getResponseType(CodegenContent responseType) {
+        return responseType == null ? "void" : getResponseTypeName(responseType.getType());
     }
 
     protected String serverSection() {

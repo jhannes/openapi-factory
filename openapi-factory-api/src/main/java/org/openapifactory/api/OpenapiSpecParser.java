@@ -4,7 +4,7 @@ import org.openapifactory.api.codegen.CodegenArrayType;
 import org.openapifactory.api.codegen.CodegenConstantType;
 import org.openapifactory.api.codegen.CodegenContact;
 import org.openapifactory.api.codegen.CodegenInlineEnumType;
-import org.openapifactory.api.codegen.CodegenInlineObjectType;
+import org.openapifactory.api.codegen.CodegenAnonymousObjectType;
 import org.openapifactory.api.codegen.CodegenOperation;
 import org.openapifactory.api.codegen.CodegenParameter;
 import org.openapifactory.api.codegen.CodegenPrimitiveType;
@@ -94,7 +94,12 @@ public class OpenapiSpecParser {
                 if (discriminatorNode.containsKey("mapping")) {
                     var mapping = discriminatorNode.mappingNode("mapping").required();
                     for (var mappingKey : mapping.keySet()) {
-                        oneOf.addMapping(mappingKey, mapping.string(mappingKey).required());
+                        var mappingValue = mapping.string(mappingKey).required();
+                        if (CodegenTypeRef.REF_PATTERN.matcher(mappingValue).matches()) {
+                            oneOf.addMapping(mappingKey, new CodegenTypeRef(oneOf.getSpec(), mappingValue));
+                        } else {
+                            oneOf.addMapping(mappingKey, new CodegenTypeRef(oneOf.getSpec(), "#/components/schemas/" + mappingValue));
+                        }
                     }
                 }
             }
@@ -226,7 +231,7 @@ public class OpenapiSpecParser {
             schema.string("description").ifPresent(result::setDescription);
             return result;
         } else if (schema.containsKey("properties")) {
-            var result = new CodegenInlineObjectType(spec);
+            var result = new CodegenAnonymousObjectType(spec);
             readProperties(schema, result);
             return result;
         } else if (schema.containsKey("additionalProperties")) {

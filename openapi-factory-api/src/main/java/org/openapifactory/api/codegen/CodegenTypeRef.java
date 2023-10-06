@@ -28,8 +28,18 @@ public class CodegenTypeRef implements CodegenType {
     }
 
     @Override
+    public boolean hasNoRequiredProperties() {
+        return getReferencedType().hasNoRequiredProperties();
+    }
+
+    @Override
     public boolean hasReadOnlyProperties() {
         return getReferencedType().hasReadOnlyProperties();
+    }
+
+    @Override
+    public boolean hasWriteOnlyProperties() {
+        return getReferencedType().hasWriteOnlyProperties();
     }
 
     @Override

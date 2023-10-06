@@ -9,6 +9,10 @@ public interface CodegenType {
         return false;
     }
 
+    default boolean hasWriteOnlyProperties() {
+        return false;
+    }
+
     default boolean isDate() {
         return false;
     }

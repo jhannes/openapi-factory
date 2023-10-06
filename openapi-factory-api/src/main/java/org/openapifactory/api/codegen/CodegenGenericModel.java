@@ -14,8 +14,8 @@ import java.util.Map;
 
 @RequiredArgsConstructor
 @ToString
-public class CodegenGenericModel implements CodegenPropertyModel {
-    @Getter
+public class CodegenGenericModel implements CodegenPropertyModel, CodegenModel {
+    @ToString.Exclude
     private final OpenapiSpec spec;
     @Getter
     private final String name;
@@ -63,4 +63,28 @@ public class CodegenGenericModel implements CodegenPropertyModel {
         result.addAll(getReferencesWithReadOnlyProperties());
         return result;
     }
+
+    @Override
+    public boolean hasWriteOnlyProperties() {
+        return !getOmittedPropertiesForWriteOnly().isEmpty();
+    }
+
+    public List<CodegenProperty> getWriteOnlyProperties() {
+        return properties.values().stream()
+                .filter(p -> p.isWriteOnly() && p.isRequired())
+                .toList();
+    }
+
+    public List<CodegenProperty> getReferencesWithWriteOnlyProperties() {
+        return properties.values().stream()
+                .filter(p -> p.getType().hasWriteOnlyProperties())
+                .toList();
+    }
+
+    public List<CodegenProperty> getOmittedPropertiesForWriteOnly() {
+        var result = new ArrayList<>(getWriteOnlyProperties());
+        result.addAll(getReferencesWithWriteOnlyProperties());
+        return result;
+    }
+
 }

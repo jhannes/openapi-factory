@@ -15,7 +15,6 @@ import java.util.TreeSet;
 @Data
 @ToString(of={"name", "title", "description", "version"})
 public class OpenapiSpec {
-    private final String modelSuffix = "Dto";
     private String name, title, description, version;
     private Optional<CodegenContact> contact = Optional.empty();
 
@@ -48,19 +47,19 @@ public class OpenapiSpec {
     }
 
     public CodegenGenericModel addGenericModel(String modelName) {
-        return addModel(new CodegenGenericModel(this, modelName + modelSuffix));
+        return addModel(new CodegenGenericModel(this, modelName));
     }
 
     public CodegenEnumModel addEnumModel(String modelName) {
-        return addModel(new CodegenEnumModel(modelName + modelSuffix));
+        return addModel(new CodegenEnumModel(modelName));
     }
 
     public CodegenOneOfModel addOneOfModel(String modelName) {
-        return addModel(new CodegenOneOfModel(this, modelName + modelSuffix));
+        return addModel(new CodegenOneOfModel(this, modelName));
     }
 
     public CodegenAllOfModel addAllOfModel(String modelName) {
-        return addModel(new CodegenAllOfModel(this, modelName + modelSuffix));
+        return addModel(new CodegenAllOfModel(this, modelName));
     }
 
     public CodegenSecurityScheme addSecurityScheme(String scheme) {
@@ -70,7 +69,7 @@ public class OpenapiSpec {
     }
 
     public CodegenModel getModel(CodegenTypeRef ref) {
-        return modelMap.get(ref.getClassName() + modelSuffix);
+        return modelMap.get(ref.getClassName());
     }
 
     private <T extends CodegenModel> T addModel(T model) {

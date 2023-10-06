@@ -36,9 +36,12 @@ public class OpenapiSnapshotNode {
         }
         return dynamicContainer(
                 "Snapshots of " + snapshotRoot,
-                list.stream().filter(p -> p.toFile().isFile())
-                        .map(spec -> new OpenapiSnapshotNode(spec, factory, rootDir).createTests())
+                list.stream().filter(Files::isRegularFile).map(spec -> singleSnapshotTest(spec, factory, rootDir))
         );
+    }
+
+    public static DynamicNode singleSnapshotTest(Path spec, OpenapiFactory factory, Path rootDir) {
+        return new OpenapiSnapshotNode(spec, factory, rootDir).createTests();
     }
 
     private DynamicNode createTests() {

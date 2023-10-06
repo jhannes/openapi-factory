@@ -43,6 +43,9 @@ components:
         - $ref: '#/components/schemas/UpdatePersonCommand'
       discriminator:
         propertyName: command
+        mapping:
+          createPerson: CreatePersonCommand
+          updatePerson: UpdatePersonCommand
     CreatePersonCommand:
       properties:
         command:

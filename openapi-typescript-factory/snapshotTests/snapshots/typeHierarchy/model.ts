@@ -55,13 +55,6 @@ export interface GoldfishDto {
     species?: string;
 }
 
-export interface PetBaseDto {
-    id?: string;
-    name: string;
-    birth_date?: string;
-    ownerAddress?: AddressDto;
-}
-
 export type PetDto =
     { pet_type: "Cat" } & CatDto |
     { pet_type: "Dog" } & DogDto |
@@ -76,6 +69,18 @@ export const PetDtoDiscriminators = [
 ] as const;
 
 export type PetDtoDiscriminator = typeof PetDtoDiscriminators[number];
+
+export interface PetBaseDto {
+    id?: string;
+    name: string;
+    birth_date?: string;
+    ownerAddress?: AddressDto;
+}
+
+export interface WorkingDogDto extends GenericDogDto {
+    pet_type: "WorkingDog";
+    capabilities: Array<WorkingDogCapabilityDto>;
+}
 export const WorkingDogCapabilityDtoValues = [
     "Guide",
     "Rescue",
@@ -83,8 +88,3 @@ export const WorkingDogCapabilityDtoValues = [
 ] as const;
 
 export type WorkingDogCapabilityDto = typeof WorkingDogCapabilityDtoValues[number];
-
-export interface WorkingDogDto extends GenericDogDto {
-    pet_type: "WorkingDog";
-    capabilities: Array<WorkingDogCapabilityDto>;
-}

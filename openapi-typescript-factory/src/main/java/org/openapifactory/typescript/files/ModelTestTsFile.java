@@ -52,7 +52,7 @@ public class ModelTestTsFile implements FileGenerator {
     private String importSection() {
         return "import {\n" +
                lines(spec.getModels(), m ->
-                       m.getName() + "," + (m instanceof CodegenEnumModel ? "\n" + m.getName() + "Values," : "")
+                       getTypeName(m) + "," + (m instanceof CodegenEnumModel ? "\n" + getTypeName(m) + "Values," : "")
                        + importInlineEnumValues(m)
                ).indent(4) + "} from \"../model\";\n\n";
     }
@@ -62,15 +62,13 @@ public class ModelTestTsFile implements FileGenerator {
             return generic.getAllProperties().stream()
                     .map(CodegenProperty::getType)
                     .filter(p -> p instanceof CodegenInlineEnumType)
-                    .map(t -> ((CodegenInlineEnumType) t))
-                    .map(t -> "\n" + t.getName() + "Values,")
+                    .map(t -> "\n" + getTypeName(t) + "Values,")
                     .collect(Collectors.joining(""));
         } else if (model instanceof CodegenAllOfModel allOf) {
             return allOf.getOwnProperties().stream()
                     .map(CodegenProperty::getType)
                     .filter(p -> p instanceof CodegenInlineEnumType)
-                    .map(t -> ((CodegenInlineEnumType) t))
-                    .map(t -> "\n" + t.getName() + "Values,")
+                    .map(t -> "\n" + getTypeName(t) + "Values,")
                     .collect(Collectors.joining(""));
         } else {
             return "";
@@ -170,7 +168,7 @@ public class ModelTestTsFile implements FileGenerator {
                     isNullable?: boolean;
                 }
 
-                """.formatted(indent(4, spec.getModels(), m -> m.getName() + "?: ModelFactory<" + m.getName() + ">;\n"));
+                """.formatted(indent(4, spec.getModels(), m -> getTypeName(m) + "?: ModelFactory<" + getTypeName(m) + ">;\n"));
 
     }
 
@@ -358,10 +356,10 @@ public class ModelTestTsFile implements FileGenerator {
                "sample(modelName: string): any {\n" +
                "    switch (modelName) {\n" +
                indent(8, spec.getModels(), m ->
-                       "case \"" + m.getName() + "\":\n" +
-                       "    return this.sample" + m.getName() + "();\n" +
-                       "case \"Array<" + m.getName() + ">\":\n" +
-                       "    return this.sampleArray" + m.getName() + "();\n"
+                       "case \"" + getTypeName(m) + "\":\n" +
+                       "    return this.sample" + getTypeName(m) + "();\n" +
+                       "case \"Array<" + getTypeName(m) + ">\":\n" +
+                       "    return this.sampleArray" + getTypeName(m) + "();\n"
                ) +
                "        default:\n" +
                "            throw new Error(\"Unknown type \" + modelName);\n" +
@@ -374,8 +372,8 @@ public class ModelTestTsFile implements FileGenerator {
     }
 
     private String singleModelFactoryFunctions(CodegenModel model) {
+        var type = getTypeName(model);
         if (model instanceof CodegenGenericModel generic) {
-            var type = model.getName();
             return "\n" +
                    ("sample" + type + "(template?: Factory<" + type + ">): " + type + " {\n" +
                     "    const containerClass = \"" + type + "\";\n" +
@@ -386,9 +384,8 @@ public class ModelTestTsFile implements FileGenerator {
                     indent(8, generic.getAllProperties(), ModelTestTsFile::propertyFactory) +
                     "    };\n" +
                     "}").indent(4) +
-                   "\n" + modelArrayFactory(model).indent(4);
+                   "\n" + modelArrayFactory(type).indent(4);
         } else if (model instanceof CodegenEnumModel enumModel) {
-            var type = model.getName();
             return "\n" +
                    ("sample" + type + "(): " + type + " {\n" +
                     "    const containerClass = \"" + type + "\";\n" +
@@ -400,8 +397,6 @@ public class ModelTestTsFile implements FileGenerator {
                    "\n" +
                    singleArrayFactory(type).indent(4);
         } else if (model instanceof CodegenOneOfModel oneOf) {
-            var type = model.getName();
-            var name = model.getName();
             return "\n" +
                    ("sample" + type + "(\n" +
                     "    factory?: (sampleData: TestSampleData) => " + type + "\n" +
@@ -416,30 +411,30 @@ public class ModelTestTsFile implements FileGenerator {
                     pickOneFromOneOf(oneOf) +
                     "}").indent(4) +
                    "\n" +
-                   ("sampleArray" + name + "(\n" +
+                   ("sampleArray" + type + "(\n" +
                     "    length?: number,\n" +
                     "    factory?: (sampleData: TestSampleData) => " + type + "\n" +
-                    "): readonly " + name + "[] {\n" +
+                    "): readonly " + type + "[] {\n" +
                     "    return this.randomArray(\n" +
-                    "        () => this.sample" + name + "(factory),\n" +
+                    "        () => this.sample" + type + "(factory),\n" +
                     "        length ?? this.arrayLength()\n" +
                     "    );\n" +
                     "}").indent(4);
         } else if (model instanceof CodegenAllOfModel allOf) {
             return "\n" +
                    (
-                           "sample" + model.getName() + "(template?: Factory<" + model.getName() + ">): " + model.getName() + " {\n" +
-                           "    const containerClass = \"" + model.getName() + "\";\n" +
+                           "sample" + type + "(template?: Factory<" + type + ">): " + type + " {\n" +
+                           "    const containerClass = \"" + type + "\";\n" +
                            "    if (!template && typeof this.sampleModelProperties[containerClass] === \"function\") {\n" +
                            "        return this.sampleModelProperties[containerClass](this);\n" +
                            "    }\n" +
                            "    return {\n" +
-                           indent(8, allOf.getRefSuperModels(), s -> "...this.sample" + s.getClassName() + "Dto(template),\n") +
+                           indent(8, allOf.getRefSuperModels(), superType -> "...this.sample" + getTypeName(superType) + "(template),\n") +
                            indent(8, allOf.getOwnProperties(), ModelTestTsFile::propertyFactory) +
                            "    };\n" +
                            "}\n").indent(4) +
                    "\n" +
-                   modelArrayFactory(model).indent(4);
+                   modelArrayFactory(type).indent(4);
         } else {
             throw new RuntimeException("Unhandled " + model);
         }
@@ -458,10 +453,10 @@ public class ModelTestTsFile implements FileGenerator {
                indent(8, oneOf.getMappedModels(), mapped ->
                        "case \"" + mapped.getName() + "\":\n" +
                        (mapped.getType() instanceof CodegenOneOfModel
-                               ? "    return this.sample" + mapped.getType().getName() + "();\n"
+                               ? "    return this.sample" + getTypeName(mapped.getType()) + "();\n"
                                : (
                                "    return {\n" +
-                               "        ...this.sample" + (mapped.getType().getName()) + "(),\n" +
+                               "        ...this.sample" + (getTypeName(mapped.getType())) + "(),\n" +
                                "        " + discriminator + ",\n" +
                                "    };\n")
                        )
@@ -500,7 +495,7 @@ public class ModelTestTsFile implements FileGenerator {
             return p.getName() + ": this.generate(\n" +
                    "    template?." + p.getName() + ",\n" +
                    "    { containerClass, propertyName: \"" + p.getName() + "\", example: \"null\", isNullable: false },\n" +
-                   "    () => this.pickOne(" + enumModel.getName() + "Values)\n" +
+                   "    () => this.pickOne(" + getTypeName(p.getType()) + "Values)\n" +
                    "),\n";
         } else if (p.getType() instanceof CodegenArrayType array) {
             var functionCall = "sampleArray" + toUpperCamelCase(getTypeName(array.getItems()));
@@ -535,14 +530,13 @@ public class ModelTestTsFile implements FileGenerator {
                "),\n";
     }
 
-    private static String modelArrayFactory(CodegenModel model) {
-        var name = model.getName();
-        return ("sampleArray" + name + "(\n" +
+    private static String modelArrayFactory(String typeName) {
+        return ("sampleArray" + typeName + "(\n" +
                 "    length?: number,\n" +
-                "    template?: Factory<" + name + ">\n" +
-                "): readonly " + name + "[] {\n" +
+                "    template?: Factory<" + typeName + ">\n" +
+                "): readonly " + typeName + "[] {\n" +
                 "    return this.randomArray(\n" +
-                "        () => this.sample" + name + "(template),\n" +
+                "        () => this.sample" + typeName + "(template),\n" +
                 "        length ?? this.arrayLength()\n" +
                 "    );\n" +
                 "}");

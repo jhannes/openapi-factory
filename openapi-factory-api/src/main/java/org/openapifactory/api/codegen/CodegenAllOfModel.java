@@ -11,21 +11,20 @@ import java.util.List;
 import java.util.Set;
 
 @Data
-public class CodegenAllOfModel implements CodegenPropertyModel {
+public class CodegenAllOfModel implements CodegenPropertyModel, CodegenModel {
     @ToString.Exclude
     private final OpenapiSpec spec;
     private final String name;
     private final List<CodegenTypeRef> refSuperModels = new ArrayList<>();
-    private final List<CodegenInlineObjectType> inlineSuperModels = new ArrayList<>();
+    private final List<CodegenGenericModel> inlineSuperModels = new ArrayList<>();
     private final Set<String> required = new LinkedHashSet<>();
 
     public void addRefSuperModel(String ref) {
         refSuperModels.add(new CodegenTypeRef(spec, ref));
     }
 
-    public CodegenInlineObjectType addSuperModel() {
-        var result = new CodegenInlineObjectType(spec);
-        result.setName(getName());
+    public CodegenGenericModel addSuperModel() {
+        var result = new CodegenGenericModel(spec, getName());
         inlineSuperModels.add(result);
         return result;
     }
@@ -33,13 +32,13 @@ public class CodegenAllOfModel implements CodegenPropertyModel {
     public List<CodegenProperty> getOwnProperties() {
         var result = new ArrayList<CodegenProperty>();
         for (var name : required) {
-            if (inlineSuperModels.stream().noneMatch(m -> m.getProperties().containsKey(name))) {
+            if (inlineSuperModels.stream().noneMatch(m -> m.getProperty(name).isPresent())) {
                 var property = getProperty(name).required().clone();
                 property.setRequired(true);
                 result.add(property);
             }
         }
-        inlineSuperModels.forEach(m -> result.addAll(m.getProperties().values()));
+        inlineSuperModels.forEach(m -> result.addAll(m.getAllProperties()));
         return result;
     }
 

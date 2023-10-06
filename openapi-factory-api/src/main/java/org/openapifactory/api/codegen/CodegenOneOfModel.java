@@ -24,7 +24,7 @@ public class CodegenOneOfModel implements CodegenModel {
     @Data
     public static class Mapping {
         private final String name;
-        private final CodegenModel type;
+        private final CodegenType type;
     }
 
     @ToString.Exclude
@@ -37,14 +37,14 @@ public class CodegenOneOfModel implements CodegenModel {
         oneOf.add(new CodegenTypeRef(spec, $ref));
     }
 
-    public void addMapping(String discriminatorValue, String $ref) {
-        discriminator.mapping.put(discriminatorValue, new CodegenTypeRef(spec, $ref));
+    public void addMapping(String discriminatorValue, CodegenTypeRef type) {
+        discriminator.mapping.put(discriminatorValue, type);
     }
 
     public Collection<Mapping> getMappedModels() {
         if (!discriminator.mapping.isEmpty()) {
             return discriminator.mapping.entrySet().stream()
-                    .map(entry -> new Mapping(entry.getKey(), (CodegenModel) entry.getValue().getReferencedType()))
+                    .map(entry -> new Mapping(entry.getKey(), entry.getValue()))
                     .toList();
         }
         if (discriminator.propertyName == null) {
@@ -74,7 +74,7 @@ public class CodegenOneOfModel implements CodegenModel {
 
     @Override
     public boolean hasReadOnlyProperties() {
-        return false && getModels().stream().anyMatch(CodegenType::hasReadOnlyProperties);
+        return getModels().stream().anyMatch(CodegenType::hasReadOnlyProperties);
     }
 
 

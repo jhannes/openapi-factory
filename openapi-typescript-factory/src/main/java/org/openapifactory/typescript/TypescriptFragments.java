@@ -1,9 +1,9 @@
 package org.openapifactory.typescript;
 
-import org.openapifactory.api.StringUtil;
+import org.openapifactory.api.codegen.CodegenAnonymousObjectType;
 import org.openapifactory.api.codegen.CodegenArrayType;
 import org.openapifactory.api.codegen.CodegenConstantType;
-import org.openapifactory.api.codegen.CodegenInlineObjectType;
+import org.openapifactory.api.codegen.CodegenInlineEnumType;
 import org.openapifactory.api.codegen.CodegenModel;
 import org.openapifactory.api.codegen.CodegenParameter;
 import org.openapifactory.api.codegen.CodegenPrimitiveType;
@@ -18,30 +18,44 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 import static org.openapifactory.api.StringUtil.join;
+import static org.openapifactory.api.StringUtil.toLowerCamelCase;
+import static org.openapifactory.api.StringUtil.toUpperCamelCase;
 
 public class TypescriptFragments {
     public static String propertyDefinition(CodegenProp p) {
-        return getName(p) + (p.isRequired() && p.getType().hasNoRequiredProperties() ? "" : "?") + ": " + getTypeName(p.getType());
+        return getPropName(p) + (p.isRequired() && p.getType().hasNoRequiredProperties() ? "" : "?") + ": " + getTypeName(p.getType());
     }
 
-    public static String getName(CodegenProp p) {
+    public static String variableName(CodegenType type) {
+        if (type instanceof CodegenArrayType arrayType) {
+            return variableName(arrayType.getItems());
+        }
+        return toLowerCamelCase(getTypeName(type));
+    }
+
+    public static String getPropName(CodegenProp p) {
         if (p.getName() == null) {
-            if (p.getType() instanceof CodegenTypeRef refType) {
-                return StringUtil.toLowerCamelCase(refType.getClassName() + "Dto");
-            }
+            return variableName(p.getType());
         }
         return p.getName();
     }
 
     public static String getTypeName(CodegenType type) {
         if (type instanceof CodegenTypeRef refType) {
-            return refType.getClassName() + "Dto";
-        } else if (type instanceof CodegenInlineObjectType objectType) {
-            return "{ " + join("; ", objectType.getProperties().values(), TypescriptFragments::propertyDefinition) + "; }";
+            return getTypeName(refType.getReferencedType());
         } else if (type instanceof CodegenModel model) {
-            return model.getName();
+            return model.getName() + "Dto";
+        } else if (type instanceof CodegenAnonymousObjectType objectType) {
+            return "{ " + join("; ", objectType.getProperties().values(), TypescriptFragments::propertyDefinition) + "; }";
+        } else if (type instanceof CodegenInlineEnumType enumModel) {
+            if (enumModel.getDeclaredModel() instanceof CodegenModel model) {
+                return getTypeName(model) + toUpperCamelCase(enumModel.getDeclaredProperty().getName()) + "Enum";
+            }
+            return join(" | ", enumModel.getValues(), s -> "\"" + s + "\"");
         } else if (type instanceof CodegenArrayType arrayType) {
-            return (arrayType.isUniqueItems() ? "Set" : "Array") + "<" + getTypeName(arrayType.getItems()) + ">";
+            return getCollectionType(arrayType) + "<" + getTypeName(arrayType.getItems()) + ">";
+        } else if (type instanceof CodegenRecordType objectType) {
+            return "{ [key: string]: " + getTypeName(objectType.getAdditionalProperties()) + "; }";
         } else if (type instanceof CodegenConstantType constant) {
             return "\"" + constant.getValue() + "\"";
         } else if (type instanceof CodegenPrimitiveType primitive) {
@@ -52,8 +66,6 @@ public class TypescriptFragments {
                 return Map.of("integer", "number", "float", "number", "object", "unknown")
                         .getOrDefault(primitive.getType(), primitive.getType());
             }
-        } else if (type instanceof CodegenRecordType objectType) {
-            return "{ [key: string]: " + getTypeName(objectType.getAdditionalProperties()) + "; }";
         } else {
             throw new IllegalArgumentException("Not supported " + type);
         }
@@ -87,8 +99,21 @@ public class TypescriptFragments {
         if (!type.hasReadOnlyProperties()) {
             return getTypeName(type);
         } else if (type instanceof CodegenArrayType arrayType) {
-            return (arrayType.isUniqueItems() ? "Set" : "Array") + "<" + getRequestTypeName(arrayType.getItems()) + ">";
+            return getCollectionType(arrayType) + "<" + getRequestTypeName(arrayType.getItems()) + ">";
         }
         return getTypeName(type) + "Request";
+    }
+
+    public static String getResponseTypeName(CodegenType type) {
+        if (!type.hasWriteOnlyProperties()) {
+            return getTypeName(type);
+        } else if (type instanceof CodegenArrayType arrayType) {
+            return getCollectionType(arrayType) + "<" + getResponseTypeName(arrayType.getItems()) + ">";
+        }
+        return getTypeName(type) + "Response";
+    }
+
+    private static String getCollectionType(CodegenArrayType arrayType) {
+        return arrayType.isUniqueItems() ? "Set" : "Array";
     }
 }

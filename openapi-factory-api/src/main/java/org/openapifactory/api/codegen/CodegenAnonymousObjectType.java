@@ -10,25 +10,16 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 @Data
-public class CodegenInlineObjectType implements CodegenPropertyModel {
+public class CodegenAnonymousObjectType implements CodegenPropertyModel {
     @ToString.Exclude
     private final OpenapiSpec spec;
 
-    private String name;
     @ToString.Exclude
     private final Map<String, CodegenProperty> properties = new LinkedHashMap<>();
 
     @Override
     public boolean hasNoRequiredProperties() {
         return properties.values().stream().anyMatch(CodegenProperty::isRequired);
-    }
-
-    @Override
-    public String getName() {
-        if (name == null) {
-            throw new UnsupportedOperationException("Can't find name of inline object");
-        }
-        return name;
     }
 
     public CodegenProperty addProperty(String name) {

@@ -13,6 +13,7 @@ import java.util.List;
 import static org.openapifactory.api.StringUtil.join;
 import static org.openapifactory.api.StringUtil.lines;
 import static org.openapifactory.api.StringUtil.toLowerCamelCase;
+import static org.openapifactory.typescript.TypescriptFragments.getTypeName;
 
 public class ApiTestTsFile implements FileGenerator {
     private final OpenapiSpec spec;
@@ -45,7 +46,7 @@ public class ApiTestTsFile implements FileGenerator {
     private String importSection() {
         return ("\n" +
                 "import {\n" +
-                lines(spec.getModels(), m -> m.getName() + ",").indent(4) +
+                lines(spec.getModels(), m -> getTypeName(m) + ",").indent(4) +
                 "} from \"../model\";\n" +
                 "\n" +
                 "import {\n" +

@@ -23,6 +23,7 @@ import java.util.Collection;
 import static org.openapifactory.api.StringUtil.indent;
 import static org.openapifactory.api.StringUtil.join;
 import static org.openapifactory.typescript.TypescriptFragments.getRequestTypeName;
+import static org.openapifactory.typescript.TypescriptFragments.getResponseTypeName;
 import static org.openapifactory.typescript.TypescriptFragments.getTypeName;
 import static org.openapifactory.typescript.TypescriptFragments.propertyDefinition;
 
@@ -62,7 +63,7 @@ public class ModelTsFile implements FileGenerator {
     }
 
     private static String enumDeclaration(CodegenEnum enumType) {
-        var name = enumType.getName();
+        var name = getTypeName(enumType);
         return "export const " + name + "Values = [\n" +
                indent(4, enumType.getValues(),
                        s -> enumType.isString() ? "\"" + s + "\",\n" : s + ",\n") +
@@ -74,10 +75,11 @@ public class ModelTsFile implements FileGenerator {
 
     protected String modelGenericSection(CodegenGenericModel generic) {
         var result = "\n" + docString(generic.getDescription()) +
-                     "export interface " + generic.getName() + " {\n" +
+                     "export interface " + getTypeName(generic) + " {\n" +
                      join(generic.getAllProperties(), this::modelPropertyDefinition) +
                      "}\n";
         result += readOnlySection(generic);
+        result += writeOnlySection(generic);
         result += inlineEnumSection(generic.getAllProperties());
         return result;
     }
@@ -87,18 +89,41 @@ public class ModelTsFile implements FileGenerator {
             return "";
         }
         if (model instanceof CodegenGenericModel generic) {
-            return "\nexport type " + generic.getName() + "Request = " +
-                   "Omit<" + generic.getName() + ", " +
+            return "\nexport type " + getRequestTypeName(model) + " = " +
+                   "Omit<" + getTypeName(model) + ", " +
                    join("|", generic.getOmittedPropertiesForReadOnly(), p -> "\"" + p.getName() + "\"") + ">" +
                    join(generic.getReferencesWithReadOnlyProperties(), p -> "\n    & { " + p.getName() + ": " + getRequestTypeName(p.getType()) + " }") +
                    ";\n";
         } else if (model instanceof CodegenOneOfModel oneOf) {
-            return "\nexport type " + oneOf.getName() + "Request = " + "SOMETHING;";
+            return "\nexport type " + getRequestTypeName(model) + " = " + "SOMETHING;";
         } else if (model instanceof CodegenAllOfModel allOf) {
-            return "\nexport type " + allOf.getName() + "Request = " +
-                   "Omit<" + allOf.getName() + ", " +
+            return "\nexport type " + getRequestTypeName(model) + " = " +
+                   "Omit<" + getTypeName(model) + ", " +
                    join("|", allOf.getOmittedPropertiesForReadOnly(), p -> "\"" + p.getName() + "\"") + ">" +
                    join(allOf.getReferencesWithReadOnlyProperties(), p -> "\n    & { " + p.getName() + ": " + getRequestTypeName(p.getType()) + " }") +
+                   ";\n";
+        } else {
+            throw new IllegalArgumentException(model.toString());
+        }
+    }
+
+    private String writeOnlySection(CodegenModel model) {
+        if (!model.hasWriteOnlyProperties()) {
+            return "";
+        }
+        if (model instanceof CodegenGenericModel generic) {
+            return "\nexport type " + getResponseTypeName(model) + " = " +
+                   "Omit<" + getTypeName(model) + ", " +
+                   join("|", generic.getOmittedPropertiesForWriteOnly(), p -> "\"" + p.getName() + "\"") + ">" +
+                   join(generic.getReferencesWithWriteOnlyProperties(), p -> "\n    & { " + p.getName() + ": " + getResponseTypeName(p.getType()) + " }") +
+                   ";\n";
+        } else if (model instanceof CodegenOneOfModel oneOf) {
+            return "\nexport type " + getResponseTypeName(model) + " = " + "SOMETHING;";
+        } else if (model instanceof CodegenAllOfModel allOf) {
+            return "\nexport type " + getResponseTypeName(model) + " = " +
+                   "Omit<" + getTypeName(model) + ", " +
+                   join("|", allOf.getOmittedPropertiesForReadOnly(), p -> "\"" + p.getName() + "\"") + ">" +
+                   join(allOf.getReferencesWithReadOnlyProperties(), p -> "\n    & { " + p.getName() + ": " + getResponseTypeName(p.getType()) + " }") +
                    ";\n";
         } else {
             throw new IllegalArgumentException(model.toString());
@@ -122,19 +147,19 @@ public class ModelTsFile implements FileGenerator {
     private String modelAllOfSection(CodegenAllOfModel allOf) {
         if (allOf.getInlineSuperModels().isEmpty()) {
             return "\n" +
-                   "export type " + allOf.getName() + " = " +
-                   join(" & ", allOf.getRefSuperModels(), m -> m.getClassName() + "Dto") +
+                   "export type " + getTypeName(allOf) + " = " +
+                   join(" & ", allOf.getRefSuperModels(), TypescriptFragments::getTypeName) +
                    ";\n" + readOnlySection(allOf) + inlineEnumSection(allOf.getOwnProperties());
         } else if (allOf.getRefSuperModels().size() == 1) {
             var superClass = (CodegenTypeRef) allOf.getRefSuperModels().get(0);
             return "\n" +
-                   "export interface " + allOf.getName() + " extends " + superClass.getClassName() + "Dto {\n" +
+                   "export interface " + getTypeName(allOf) + " extends " + getTypeName(superClass) + " {\n" +
                    indent(4, allOf.getOwnProperties(), p -> propertyDefinition(p) + ";\n") +
                    "}\n" + readOnlySection(allOf) + inlineEnumSection(allOf.getOwnProperties());
         } else {
             return "\n" +
-                   "export type " + allOf.getName() + " = " +
-                   join(" & ", allOf.getRefSuperModels(), m -> m.getClassName() + "Dto") +
+                   "export type " + getTypeName(allOf) + " = " +
+                   join(" & ", allOf.getRefSuperModels(), TypescriptFragments::getTypeName) +
                    " & {\n" +
                    indent(4, allOf.getOwnProperties(), p -> propertyDefinition(p) + ";\n") +
                    "};\n" +
@@ -144,7 +169,7 @@ public class ModelTsFile implements FileGenerator {
     }
 
     private String modelOneOfSection(CodegenOneOfModel oneOf) {
-        var typeName = oneOf.getName();
+        var typeName = getTypeName(oneOf);
         var discriminator = oneOf.getDiscriminator();
 
         if (discriminator.getPropertyName() == null) {
