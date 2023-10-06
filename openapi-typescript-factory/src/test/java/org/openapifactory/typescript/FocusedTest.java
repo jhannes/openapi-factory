@@ -13,7 +13,7 @@ public class FocusedTest {
 
     @TestFactory
     Stream<DynamicNode> typescriptApi() {
-        Path spec = Paths.get("../snapshotTests/typeHierarchy.yaml");
+        Path spec = Paths.get("../snapshotTests/fakerestapi.link");
         return Stream.of(
                 OpenapiSnapshotNode.singleSnapshotTest(spec, createFactory(), Path.of("snapshotTests"))
         );

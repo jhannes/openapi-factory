@@ -1,19 +1,21 @@
 package org.openapifactory.api.codegen;
 
 import lombok.Data;
+import lombok.ToString;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
 
 @Data
 public class CodegenResponse {
+    @ToString.Exclude
     private final OpenapiSpec spec;
     private final int responseCode;
     private Map<String, CodegenContent> responseTypes = new LinkedHashMap<>();
 
     public CodegenContent addResponseType(String contentType) {
         var content = new CodegenContent(spec, contentType);
-        getResponseTypes().put(contentType, content);
+        getResponseTypes().put(contentType.split(";")[0], content);
         return content;
     }
 

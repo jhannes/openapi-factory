@@ -66,7 +66,7 @@ public class CodegenOperation {
 
     public CodegenContent addRequestBody(String contentType) {
         var content = new CodegenContent(spec, contentType);
-        getRequestBodies().put(contentType, content);
+        getRequestBodies().put(contentType.split(";")[0], content);
         return content;
     }
 

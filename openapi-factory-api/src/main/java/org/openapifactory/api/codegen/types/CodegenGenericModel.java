@@ -30,7 +30,7 @@ public class CodegenGenericModel implements CodegenPropertyModel, CodegenModel {
 
     @Override
     public CodegenProperty addProperty(String name) {
-        var property = new CodegenProperty(spec, name);
+        var property = new CodegenProperty(spec, this, name);
         properties.put(name, property);
         return property;
     }

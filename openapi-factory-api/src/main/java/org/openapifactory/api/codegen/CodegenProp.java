@@ -5,7 +5,11 @@ import org.openapifactory.api.codegen.types.CodegenType;
 public interface CodegenProp {
     String getName();
 
+    CodegenType getType();
+
     boolean isRequired();
 
-    CodegenType getType();
+    default boolean isNullable() {
+        return false;
+    }
 }

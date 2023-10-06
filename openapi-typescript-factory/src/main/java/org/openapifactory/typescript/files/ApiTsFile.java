@@ -218,15 +218,13 @@ public class ApiTsFile implements FileGenerator {
 
     private static String requestBodyExpression(CodegenOperation op, CodegenContent requestBody) {
         var propName = TypescriptFragments.variableName(requestBody.getType());
-        return switch (requestBody.getContentType()) {
-            case "application/x-www-form-urlencoded" -> "this.formData(params.formParams)";
-            case "multipart/form-data" -> "this.formData(params.formParams)";
-            case "application/json" ->
-                    op.hasOnlyOptionalParams()
-                            ? "params?." + propName + " ? JSON.stringify(params." + propName + ") : undefined"
-                            : "JSON.stringify(params." + propName + ")";
-            default -> throw new RuntimeException();
-        };
+        if (requestBody.isFormContent()) {
+            return "this.formData(params.formParams)";
+        } else if (op.hasOnlyOptionalParams()) {
+            return "params?." + propName + " ? JSON.stringify(params." + propName + ") : undefined";
+        } else {
+            return "JSON.stringify(params." + propName + ")";
+        }
     }
 
     private static String paramsDefinition(String paramName, List<CodegenParameter> params) {
@@ -271,7 +269,7 @@ public class ApiTsFile implements FileGenerator {
         }
         return operation.getResponses().stream()
                 .filter(CodegenResponse::is2xx)
-                .map(o -> o.getResponseTypes().isEmpty() ? "undefined" : (getResponseTypeName(o.getContent().getType())))
+                .map(o -> o.getContent() == null ? "undefined" : (getResponseTypeName(o.getContent().getType())))
                 .collect(Collectors.joining("|"));
     }
 

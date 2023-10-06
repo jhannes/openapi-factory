@@ -95,7 +95,7 @@ public class ModelTsFile implements FileGenerator {
                    join(generic.getReferencesWithReadOnlyProperties(), p -> "\n    & { " + p.getName() + ": " + getRequestTypeName(p.getType()) + " }") +
                    ";\n";
         } else if (model instanceof CodegenOneOfModel oneOf) {
-            return "\nexport type " + getRequestTypeName(model) + " = " + "SOMETHING;";
+            return "\nexport type " + getRequestTypeName(model) + " = " + join(" | ", oneOf.getOneOf(), TypescriptFragments::getRequestTypeName)  + "\n";
         } else if (model instanceof CodegenAllOfModel allOf) {
             return "\nexport type " + getRequestTypeName(model) + " = " +
                    "Omit<" + getTypeName(model) + ", " +
@@ -176,7 +176,7 @@ public class ModelTsFile implements FileGenerator {
             return "\n" +
                    "export type " + typeName + " = " +
                    join(" | ", oneOf.getOneOf(), TypescriptFragments::getTypeName) +
-                   ";\n";
+                   ";\n" + readOnlySection(oneOf);
         }
 
         return "\n" +
@@ -185,6 +185,7 @@ public class ModelTsFile implements FileGenerator {
                        "    " + ((mapped.getType() instanceof CodegenOneOfModel)
                                ? "" : "{ " + discriminator.getPropertyName() + ": \"" + mapped.getName() + "\" } & ") + getTypeName(mapped.getType())
                ) + ";\n" +
+               readOnlySection(oneOf) +
                "\n" +
                "export const " + typeName + "Discriminators = [\n" +
                indent(4, oneOf.getMappedModels(), s -> {

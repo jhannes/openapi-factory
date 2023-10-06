@@ -1,5 +1,6 @@
 package org.openapifactory.typescript;
 
+import org.openapifactory.api.codegen.CodegenProperty;
 import org.openapifactory.api.codegen.types.CodegenAnonymousObjectModel;
 import org.openapifactory.api.codegen.CodegenApi;
 import org.openapifactory.api.codegen.types.CodegenArrayType;
@@ -24,7 +25,8 @@ import static org.openapifactory.api.StringUtil.toUpperCamelCase;
 
 public class TypescriptFragments {
     public static String propertyDefinition(CodegenProp p) {
-        return getPropName(p) + (p.isRequired() && p.getType().hasNoRequiredProperties() ? "" : "?") + ": " + getTypeName(p.getType());
+        return getPropName(p) + (p.isRequired() && p.getType().hasNoRequiredProperties() ? "" : "?") +
+               ": " + getTypeName(p.getType()) + (p.isNullable() ? " | null" : "");
     }
 
     public static String variableName(CodegenType type) {
@@ -52,8 +54,8 @@ public class TypescriptFragments {
         } else if (type instanceof CodegenAnonymousObjectModel objectType) {
             return "{ " + join("; ", objectType.getProperties().values(), TypescriptFragments::propertyDefinition) + "; }";
         } else if (type instanceof CodegenEmbeddedEnumType enumModel) {
-            if (enumModel.getDeclaredModel() instanceof CodegenModel model) {
-                return getTypeName(model) + toUpperCamelCase(enumModel.getDeclaredProperty().getName()) + "Enum";
+            if (enumModel.getDeclaredProperty() instanceof CodegenProperty prop) {
+                return getTypeName(prop.getModel()) + toUpperCamelCase(prop.getName()) + "Enum";
             }
             return join(" | ", enumModel.getValues(), s -> "\"" + s + "\"");
         } else if (type instanceof CodegenArrayType arrayType) {

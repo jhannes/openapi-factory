@@ -1,6 +1,8 @@
 package org.openapifactory.api.json;
 
 import jakarta.json.JsonArray;
+import jakarta.json.JsonNumber;
+import jakarta.json.JsonString;
 import jakarta.json.JsonValue;
 import org.openapifactory.api.SpecMappingNode;
 import org.openapifactory.api.SpecSequenceNode;
@@ -29,8 +31,20 @@ public class JsonSequenceNode implements SpecSequenceNode {
 
     @Override
     public List<String> stringList() throws IllegalFormatException {
-        return node.getValuesAs(JsonValue::toString);
+        return node.stream().map(this::asString).toList();
     }
+
+    private String asString(JsonValue v) {
+        if (v instanceof JsonString string) {
+            return string.getString();
+        } else if (v instanceof JsonNumber number) {
+            return number.toString();
+        } else if (v == JsonValue.TRUE || v == JsonValue.FALSE) {
+            return v.toString();
+        }
+        throw new RuntimeException("Expected at " + path + " value " + v + " to be String");
+    }
+
 
     private List<String> appendToPath(int index) {
         var result = new ArrayList<>(path);

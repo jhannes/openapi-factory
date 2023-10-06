@@ -14,7 +14,7 @@ public class CodegenContent {
     private boolean required;
 
     public boolean isFormContent() {
-        return contentType.equals("application/x-www-form-urlencoded")
-                || contentType.equals("multipart/form-data");
+        return contentType.startsWith("application/x-www-form-urlencoded")
+                || contentType.startsWith("multipart/form-data");
     }
 }

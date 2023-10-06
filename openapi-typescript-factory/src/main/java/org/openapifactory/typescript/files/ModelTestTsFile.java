@@ -478,14 +478,14 @@ public class ModelTestTsFile implements FileGenerator {
             if (primitive.isDate()) {
                 return p.getName() + ": this.generate(\n" +
                        "    template?." + p.getName() + ",\n" +
-                       "    { containerClass, propertyName: \"" + p.getName() + "\", example: \"null\", isNullable: false },\n" +
+                       "    { containerClass, propertyName: \"" + p.getName() + "\", example: \"null\", isNullable: " + p.isNullable() + " },\n" +
                        "    () => this.sampleDate()\n" +
                        "),\n";
             }
             if (primitive.getType().equals("string")) {
                 return p.getName() + ": this.generate(\n" +
                        "    template?." + p.getName() + ",\n" +
-                       "    { containerClass, propertyName: \"" + p.getName() + "\", isNullable: false },\n" +
+                       "    { containerClass, propertyName: \"" + p.getName() + "\", isNullable: " + p.isNullable() + " },\n" +
                        "    () => this.sampleString(\"" + Objects.toString(primitive.getFormat(), "") + "\", \"" + p.getExample() + "\")\n" +
                        "),\n";
             }
@@ -494,7 +494,7 @@ public class ModelTestTsFile implements FileGenerator {
         } else if (p.getType() instanceof CodegenEmbeddedEnumType enumModel) {
             return p.getName() + ": this.generate(\n" +
                    "    template?." + p.getName() + ",\n" +
-                   "    { containerClass, propertyName: \"" + p.getName() + "\", example: \"null\", isNullable: false },\n" +
+                   "    { containerClass, propertyName: \"" + p.getName() + "\", example: \"null\", isNullable: " + p.isNullable() + " },\n" +
                    "    () => this.pickOne(" + getTypeName(p.getType()) + "Values)\n" +
                    "),\n";
         } else if (p.getType() instanceof CodegenArrayType array) {
@@ -504,7 +504,7 @@ public class ModelTestTsFile implements FileGenerator {
             }
             return p.getName() + ": this.generate(\n" +
                    "    template?." + p.getName() + ",\n" +
-                   "    { containerClass, propertyName: \"" + p.getName() + "\", example: null, isNullable: false },\n" +
+                   "    { containerClass, propertyName: \"" + p.getName() + "\", example: null, isNullable: " + p.isNullable() + " },\n" +
                    "    () => this." + functionCall + "()\n" +
                    "),\n";
         } else if (p.getType() instanceof CodegenRecordType record) {
@@ -519,13 +519,13 @@ public class ModelTestTsFile implements FileGenerator {
             }
             return p.getName() + ": this.generate(\n" +
                    "    template?." + p.getName() + ",\n" +
-                   "    { containerClass, propertyName: \"" + p.getName() + "\", example: null, isNullable: false },\n" +
+                   "    { containerClass, propertyName: \"" + p.getName() + "\", example: null, isNullable: " + p.isNullable() + " },\n" +
                    "    " + functionCall + "\n" +
                    "),\n";
         }
         return p.getName() + ": this.generate(\n" +
                "    template?." + p.getName() + ",\n" +
-               "    { containerClass, propertyName: \"" + p.getName() + "\", example: \"null\", isNullable: false },\n" +
+               "    { containerClass, propertyName: \"" + p.getName() + "\", example: \"null\", isNullable: " + p.isNullable() + " },\n" +
                "    () => this.sample" + getTypeName(p.getType()) + "()\n" +
                "),\n";
     }

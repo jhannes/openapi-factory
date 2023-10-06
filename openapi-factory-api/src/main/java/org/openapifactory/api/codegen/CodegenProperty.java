@@ -9,9 +9,11 @@ import org.openapifactory.api.codegen.types.CodegenType;
 public class CodegenProperty implements CodegenProp, Cloneable {
     @ToString.Exclude
     private final OpenapiSpec spec;
+    @ToString.Exclude
+    private final CodegenPropertyModel model;
     private final String name;
     private String description, example;
-    private boolean required, readOnly, writeOnly;
+    private boolean required, readOnly, writeOnly, nullable;
 
     @ToString.Exclude
     private CodegenType type;

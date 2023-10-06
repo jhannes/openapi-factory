@@ -84,9 +84,15 @@ public class DiffNode {
             if (significantDiff.isEmpty()) {
                 fail("whitespace difference: " + diff.getDeltas());
             } else {
-                fail(significantDiff.size() + " significant differences: " + significantDiff.stream().map(Object::toString).collect(Collectors.joining("\n")));
+                fail(
+                        significantDiff.size() + " significant differences: \n" + significantDiff.stream().map(d -> printDelta(file, d)).collect(Collectors.joining(""))
+                );
             }
         }
+    }
+
+    private String printDelta(Path file, Delta<String> delta) {
+        return "\t" + file + ":" + delta.getOriginal().getPosition() + ": " + delta + "\n";
     }
 
     private static boolean whitespaceOnly(Delta<String> delta) {

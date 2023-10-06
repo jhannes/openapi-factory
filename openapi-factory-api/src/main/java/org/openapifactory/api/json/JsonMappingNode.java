@@ -9,9 +9,7 @@ import org.openapifactory.api.Maybe;
 import org.openapifactory.api.SpecMappingNode;
 import org.openapifactory.api.SpecSequenceNode;
 
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
+import java.io.Reader;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -27,8 +25,8 @@ public class JsonMappingNode implements SpecMappingNode {
         this.node = node;
     }
 
-    public static SpecMappingNode read(Path apiDocument) throws IOException {
-        return new JsonMappingNode(List.of(), Json.createReader(Files.newBufferedReader(apiDocument)).readObject());
+    public static SpecMappingNode read(Reader reader) {
+        return new JsonMappingNode(List.of(), Json.createReader(reader).readObject());
     }
 
     @Override

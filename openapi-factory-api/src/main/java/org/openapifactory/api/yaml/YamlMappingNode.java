@@ -12,9 +12,7 @@ import org.yaml.snakeyaml.parser.ParserImpl;
 import org.yaml.snakeyaml.reader.StreamReader;
 import org.yaml.snakeyaml.resolver.Resolver;
 
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
+import java.io.Reader;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
@@ -43,12 +41,10 @@ public class YamlMappingNode implements SpecMappingNode {
 
     }
 
-    public static SpecMappingNode read(Path path) throws IOException {
-        try (var reader = Files.newBufferedReader(path)) {
-            var composer =
-                    new Composer(new ParserImpl(new StreamReader(reader), new LoaderOptions()), new Resolver(), new LoaderOptions());
-            return new YamlMappingNode(List.of(), composer.getSingleNode());
-        }
+    public static SpecMappingNode read(Reader reader) {
+        var composer =
+                new Composer(new ParserImpl(new StreamReader(reader), new LoaderOptions()), new Resolver(), new LoaderOptions());
+        return new YamlMappingNode(List.of(), composer.getSingleNode());
     }
 
     @Override
