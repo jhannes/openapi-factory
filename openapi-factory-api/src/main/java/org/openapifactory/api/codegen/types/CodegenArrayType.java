@@ -6,6 +6,8 @@ import lombok.Data;
 public class CodegenArrayType implements CodegenType {
     private boolean uniqueItems;
     private CodegenType items;
+    private int minItems = 0;
+    private Integer maxItems;
 
     @Override
     public boolean hasNoRequiredProperties() {

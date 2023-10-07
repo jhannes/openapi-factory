@@ -17,6 +17,7 @@ public class CodegenParameter implements CodegenProp {
     }
 
     private final String name;
+    private String description;
     private boolean required;
     private CodegenType type;
     private ParameterLocation in;

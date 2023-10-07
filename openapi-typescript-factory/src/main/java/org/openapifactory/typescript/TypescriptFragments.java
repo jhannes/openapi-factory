@@ -1,23 +1,24 @@
 package org.openapifactory.typescript;
 
-import org.openapifactory.api.codegen.CodegenProperty;
-import org.openapifactory.api.codegen.types.CodegenAnonymousObjectModel;
 import org.openapifactory.api.codegen.CodegenApi;
+import org.openapifactory.api.codegen.CodegenParameter;
+import org.openapifactory.api.codegen.CodegenProp;
+import org.openapifactory.api.codegen.CodegenProperty;
+import org.openapifactory.api.codegen.OpenapiSpec;
+import org.openapifactory.api.codegen.types.CodegenAnonymousObjectModel;
 import org.openapifactory.api.codegen.types.CodegenArrayType;
 import org.openapifactory.api.codegen.types.CodegenConstantType;
 import org.openapifactory.api.codegen.types.CodegenEmbeddedEnumType;
 import org.openapifactory.api.codegen.types.CodegenModel;
-import org.openapifactory.api.codegen.CodegenParameter;
 import org.openapifactory.api.codegen.types.CodegenPrimitiveType;
-import org.openapifactory.api.codegen.CodegenProp;
 import org.openapifactory.api.codegen.types.CodegenRecordType;
 import org.openapifactory.api.codegen.types.CodegenType;
 import org.openapifactory.api.codegen.types.CodegenTypeRef;
-import org.openapifactory.api.codegen.OpenapiSpec;
 
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import static org.openapifactory.api.StringUtil.join;
 import static org.openapifactory.api.StringUtil.toLowerCamelCase;
@@ -49,6 +50,15 @@ public class TypescriptFragments {
     public static String getTypeName(CodegenType type) {
         if (type instanceof CodegenTypeRef refType) {
             return getTypeName(refType.getReferencedType());
+        } else if (type instanceof CodegenArrayType arrayType) {
+            var itemTypeName = getTypeName(arrayType.getItems());
+            if (arrayType.getMaxItems() != null && arrayType.getMaxItems() < 5) {
+                return "[" + IntStream.range(0, arrayType.getMaxItems())
+                        .mapToObj(i -> itemTypeName + (i >= arrayType.getMinItems() ? "?" : ""))
+                        .collect(Collectors.joining(", ")) +
+                       "]";
+            }
+            return getCollectionType(arrayType) + "<" + itemTypeName + ">";
         } else if (type instanceof CodegenModel model) {
             return model.getName() + "Dto";
         } else if (type instanceof CodegenAnonymousObjectModel objectType) {
@@ -58,8 +68,6 @@ public class TypescriptFragments {
                 return getTypeName(prop.getModel()) + toUpperCamelCase(prop.getName()) + "Enum";
             }
             return join(" | ", enumModel.getValues(), s -> "\"" + s + "\"");
-        } else if (type instanceof CodegenArrayType arrayType) {
-            return getCollectionType(arrayType) + "<" + getTypeName(arrayType.getItems()) + ">";
         } else if (type instanceof CodegenRecordType objectType) {
             return "{ [key: string]: " + getTypeName(objectType.getAdditionalProperties()) + "; }";
         } else if (type instanceof CodegenConstantType constant) {
@@ -125,5 +133,10 @@ public class TypescriptFragments {
 
     public static String getApiName(CodegenApi api) {
         return toUpperCamelCase(api.getTag()) + "Api";
+    }
+
+    public static String docString(String description) {
+        if (description == null) return "";
+        return "/**\n * " + description + "\n */\n";
     }
 }

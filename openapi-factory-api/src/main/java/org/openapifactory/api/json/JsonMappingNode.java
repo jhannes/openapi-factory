@@ -19,14 +19,21 @@ public class JsonMappingNode implements SpecMappingNode {
 
     private final List<String> path;
     private final JsonObject node;
+    private final String relativeFilename;
 
-    public JsonMappingNode(List<String> path, JsonObject node) {
+    public JsonMappingNode(List<String> path, JsonObject node, String relativeFilename) {
         this.path = path;
         this.node = node;
+        this.relativeFilename = relativeFilename;
     }
 
-    public static SpecMappingNode read(Reader reader) {
-        return new JsonMappingNode(List.of(), Json.createReader(reader).readObject());
+    public static SpecMappingNode read(Reader reader, String relativeFile) {
+        return new JsonMappingNode(List.of(), Json.createReader(reader).readObject(), relativeFile);
+    }
+
+    @Override
+    public String getRelativeFilename() {
+        return relativeFilename;
     }
 
     @Override
@@ -34,7 +41,7 @@ public class JsonMappingNode implements SpecMappingNode {
         return get(key).filter(
                 n -> n instanceof JsonObject,
                 n -> "Expected JsonObject at " + path + " " + key + ": " + n
-        ).map(n -> new JsonMappingNode(appendToPath(key), (JsonObject) n));
+        ).map(n -> new JsonMappingNode(appendToPath(key), (JsonObject) n, relativeFilename));
     }
 
     private Maybe<JsonValue> get(String key) {
@@ -46,7 +53,7 @@ public class JsonMappingNode implements SpecMappingNode {
         if (!containsKey(key)) {
             return missingKey(key);
         }
-        return Maybe.present(new JsonSequenceNode(appendToPath(key), node.getJsonArray(key)));
+        return Maybe.present(new JsonSequenceNode(appendToPath(key), node.getJsonArray(key), relativeFilename));
     }
 
     @Override

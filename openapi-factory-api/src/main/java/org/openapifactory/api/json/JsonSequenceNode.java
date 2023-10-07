@@ -14,17 +14,19 @@ import java.util.List;
 public class JsonSequenceNode implements SpecSequenceNode {
     private final List<String> path;
     private final JsonArray node;
+    private final String relativeFile;
 
-    public JsonSequenceNode(List<String> path, JsonArray node) {
+    public JsonSequenceNode(List<String> path, JsonArray node, String relativeFile) {
         this.path = path;
         this.node = node;
+        this.relativeFile = relativeFile;
     }
 
     @Override
     public Iterable<SpecMappingNode> mappingNodes() throws IllegalFormatException {
         var result = new ArrayList<SpecMappingNode>();
         for (int i = 0; i < node.size(); i++) {
-            result.add(new JsonMappingNode(appendToPath(i), node.getJsonObject(i)));
+            result.add(new JsonMappingNode(appendToPath(i), node.getJsonObject(i), relativeFile));
         }
         return result;
     }

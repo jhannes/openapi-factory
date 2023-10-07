@@ -36,8 +36,8 @@ public class CodegenOneOfModel implements CodegenModel {
     private final Discriminator discriminator = new Discriminator();
     private final List<CodegenTypeRef> oneOf = new ArrayList<>();
 
-    public void addOneOf(String $ref) {
-        oneOf.add(new CodegenTypeRef(spec, $ref));
+    public void addOneOf(String $ref, String relativeFilename) {
+        oneOf.add(new CodegenTypeRef(spec, $ref, relativeFilename));
     }
 
     public void addMapping(String discriminatorValue, CodegenTypeRef type) {

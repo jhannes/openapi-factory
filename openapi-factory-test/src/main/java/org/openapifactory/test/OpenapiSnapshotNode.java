@@ -9,7 +9,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Comparator;
 import java.util.List;
-import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.DynamicContainer.dynamicContainer;
 import static org.junit.jupiter.api.DynamicTest.dynamicTest;
@@ -78,7 +77,7 @@ public class OpenapiSnapshotNode {
 
     private static void cleanDirectory(Path directory) throws IOException {
         if (Files.isDirectory(directory)) {
-            try (Stream<Path> walk = Files.walk(directory)) {
+            try (var walk = Files.walk(directory)) {
                 walk.sorted(Comparator.reverseOrder())
                         .map(Path::toFile)
                         .forEach(File::delete);

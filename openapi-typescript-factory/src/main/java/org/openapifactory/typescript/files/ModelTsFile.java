@@ -2,6 +2,7 @@ package org.openapifactory.typescript.files;
 
 import org.openapifactory.api.FileGenerator;
 import org.openapifactory.api.codegen.types.CodegenAllOfModel;
+import org.openapifactory.api.codegen.types.CodegenArrayModel;
 import org.openapifactory.api.codegen.types.CodegenArrayType;
 import org.openapifactory.api.codegen.types.CodegenEnum;
 import org.openapifactory.api.codegen.types.CodegenEnumModel;
@@ -22,6 +23,7 @@ import java.util.Collection;
 
 import static org.openapifactory.api.StringUtil.indent;
 import static org.openapifactory.api.StringUtil.join;
+import static org.openapifactory.typescript.TypescriptFragments.docString;
 import static org.openapifactory.typescript.TypescriptFragments.getRequestTypeName;
 import static org.openapifactory.typescript.TypescriptFragments.getResponseTypeName;
 import static org.openapifactory.typescript.TypescriptFragments.getTypeName;
@@ -57,6 +59,8 @@ public class ModelTsFile implements FileGenerator {
             return modelAllOfSection(allOf);
         } else if (model instanceof CodegenOneOfModel oneOf) {
             return modelOneOfSection(oneOf);
+        } else if (model instanceof CodegenArrayModel array) {
+            return "";
         } else {
             throw new IllegalArgumentException("Unsupported " + model);
         }
@@ -202,11 +206,6 @@ public class ModelTsFile implements FileGenerator {
 
     protected String modelPropertyDefinition(CodegenProperty p) {
         return (docString(p.getDescription()) + propertyDefinition(p) + ";").indent(4);
-    }
-
-    private static String docString(String description) {
-        if (description == null) return "";
-        return "/**\n * " + description + "\n */\n";
     }
 
 }

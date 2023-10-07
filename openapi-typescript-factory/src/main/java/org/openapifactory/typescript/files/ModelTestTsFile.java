@@ -1,18 +1,18 @@
 package org.openapifactory.typescript.files;
 
 import org.openapifactory.api.FileGenerator;
+import org.openapifactory.api.codegen.CodegenProperty;
+import org.openapifactory.api.codegen.OpenapiSpec;
 import org.openapifactory.api.codegen.types.CodegenAllOfModel;
 import org.openapifactory.api.codegen.types.CodegenArrayType;
 import org.openapifactory.api.codegen.types.CodegenConstantType;
+import org.openapifactory.api.codegen.types.CodegenEmbeddedEnumType;
 import org.openapifactory.api.codegen.types.CodegenEnumModel;
 import org.openapifactory.api.codegen.types.CodegenGenericModel;
-import org.openapifactory.api.codegen.types.CodegenEmbeddedEnumType;
 import org.openapifactory.api.codegen.types.CodegenModel;
 import org.openapifactory.api.codegen.types.CodegenOneOfModel;
 import org.openapifactory.api.codegen.types.CodegenPrimitiveType;
-import org.openapifactory.api.codegen.CodegenProperty;
 import org.openapifactory.api.codegen.types.CodegenRecordType;
-import org.openapifactory.api.codegen.OpenapiSpec;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -376,10 +376,7 @@ public class ModelTestTsFile implements FileGenerator {
         if (model instanceof CodegenGenericModel generic) {
             return "\n" +
                    ("sample" + type + "(template?: Factory<" + type + ">): " + type + " {\n" +
-                    "    const containerClass = \"" + type + "\";\n" +
-                    "    if (!template && typeof this.sampleModelProperties[containerClass] === \"function\") {\n" +
-                    "        return this.sampleModelProperties[containerClass](this);\n" +
-                    "    }\n" +
+                    getFromModelPropertyFactory(type) +
                     "    return {\n" +
                     indent(8, generic.getAllProperties(), ModelTestTsFile::propertyFactory) +
                     "    };\n" +
@@ -424,10 +421,7 @@ public class ModelTestTsFile implements FileGenerator {
             return "\n" +
                    (
                            "sample" + type + "(template?: Factory<" + type + ">): " + type + " {\n" +
-                           "    const containerClass = \"" + type + "\";\n" +
-                           "    if (!template && typeof this.sampleModelProperties[containerClass] === \"function\") {\n" +
-                           "        return this.sampleModelProperties[containerClass](this);\n" +
-                           "    }\n" +
+                           getFromModelPropertyFactory(type) +
                            "    return {\n" +
                            indent(8, allOf.getRefSuperModels(), superType -> "...this.sample" + getTypeName(superType) + "(template),\n") +
                            indent(8, allOf.getOwnProperties(), ModelTestTsFile::propertyFactory) +
@@ -438,6 +432,13 @@ public class ModelTestTsFile implements FileGenerator {
         } else {
             throw new RuntimeException("Unhandled " + model);
         }
+    }
+
+    private static String getFromModelPropertyFactory(String type) {
+        return "    const containerClass = \"" + type + "\";\n" +
+               "    if (!template && typeof this.sampleModelProperties[containerClass] === \"function\") {\n" +
+               "        return this.sampleModelProperties[containerClass](this);\n" +
+               "    }\n";
     }
 
     private String pickOneFromOneOf(CodegenOneOfModel oneOf) {
@@ -491,21 +492,26 @@ public class ModelTestTsFile implements FileGenerator {
             }
         } else if (p.getType() instanceof CodegenConstantType constant) {
             return p.getName() + ": \"" + constant.getValue() + "\",\n";
-        } else if (p.getType() instanceof CodegenEmbeddedEnumType enumModel) {
+        } else if (p.getType() instanceof CodegenEmbeddedEnumType) {
             return p.getName() + ": this.generate(\n" +
                    "    template?." + p.getName() + ",\n" +
                    "    { containerClass, propertyName: \"" + p.getName() + "\", example: \"null\", isNullable: " + p.isNullable() + " },\n" +
                    "    () => this.pickOne(" + getTypeName(p.getType()) + "Values)\n" +
                    "),\n";
-        } else if (p.getType() instanceof CodegenArrayType array) {
-            var functionCall = "sampleArray" + toUpperCamelCase(getTypeName(array.getItems()));
+        } else if (p.getType().getReferencedType() instanceof CodegenArrayType array) {
+            var functionCall = "() => this.sampleArray" + toUpperCamelCase(getTypeName(array.getItems())) + "()";
             if (array.getItems() instanceof CodegenEmbeddedEnumType || array.getItems() instanceof CodegenConstantType) {
-                functionCall = "sampleArrayString";
+                functionCall = "() => this.sampleArrayString()";
+            } else if (array.getMaxItems() != null || array.getItems().getReferencedType() instanceof CodegenArrayType) {
+                functionCall = "() => {\n" +
+                               "        throw new Error(\"Can't automatically generate for " + getTypeName(array) + "\");\n" +
+                               "    }";
+
             }
             return p.getName() + ": this.generate(\n" +
                    "    template?." + p.getName() + ",\n" +
                    "    { containerClass, propertyName: \"" + p.getName() + "\", example: null, isNullable: " + p.isNullable() + " },\n" +
-                   "    () => this." + functionCall + "()\n" +
+                   "    " + functionCall + "\n" +
                    "),\n";
         } else if (p.getType() instanceof CodegenRecordType record) {
             // TODO: This is a bug in the old generator - records shouldn't generate arrays
@@ -531,14 +537,14 @@ public class ModelTestTsFile implements FileGenerator {
     }
 
     private static String modelArrayFactory(String typeName) {
-        return ("sampleArray" + typeName + "(\n" +
-                "    length?: number,\n" +
-                "    template?: Factory<" + typeName + ">\n" +
-                "): readonly " + typeName + "[] {\n" +
-                "    return this.randomArray(\n" +
-                "        () => this.sample" + typeName + "(template),\n" +
-                "        length ?? this.arrayLength()\n" +
-                "    );\n" +
-                "}");
+        return "sampleArray" + typeName + "(\n" +
+               "    length?: number,\n" +
+               "    template?: Factory<" + typeName + ">\n" +
+               "): readonly " + typeName + "[] {\n" +
+               "    return this.randomArray(\n" +
+               "        () => this.sample" + typeName + "(template),\n" +
+               "        length ?? this.arrayLength()\n" +
+               "    );\n" +
+               "}";
     }
 }

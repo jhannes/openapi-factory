@@ -17,7 +17,7 @@ export interface PetDto {
 }
 
 export interface PetLocationsDto {
-    locations?: { [key: string]: { [key: string]: Array<number>; }; };
+    locations?: { [key: string]: { [key: string]: [number, number]; }; };
 }
 
 export interface PetStoreDto {

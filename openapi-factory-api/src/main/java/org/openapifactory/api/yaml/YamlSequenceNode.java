@@ -7,15 +7,20 @@ import org.yaml.snakeyaml.nodes.Node;
 import org.yaml.snakeyaml.nodes.ScalarNode;
 import org.yaml.snakeyaml.nodes.SequenceNode;
 
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 
 public class YamlSequenceNode implements SpecSequenceNode {
     private final List<String> path;
     private final SequenceNode node;
+    private final String relativeFilename;
+    private final URL url;
 
-    public YamlSequenceNode(List<String> path, Node node) {
+    public YamlSequenceNode(List<String> path, Node node, String relativeFilename, URL url) {
         this.path = path;
+        this.relativeFilename = relativeFilename;
+        this.url = url;
         if (node instanceof MappingNode) {
             throw new RuntimeException(
                     "Expected node to be sequence at " + path + " " + node.getStartMark()
@@ -29,7 +34,7 @@ public class YamlSequenceNode implements SpecSequenceNode {
         var result = new ArrayList<SpecMappingNode>();
         var value = node.getValue();
         for (int i = 0; i < value.size(); i++) {
-            result.add(new YamlMappingNode(append(path, i), value.get(i)));
+            result.add(new YamlMappingNode(append(path, i), value.get(i), relativeFilename, url));
         }
         return result;
     }

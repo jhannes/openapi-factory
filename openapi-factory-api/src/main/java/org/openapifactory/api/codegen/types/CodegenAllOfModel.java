@@ -22,8 +22,8 @@ public class CodegenAllOfModel implements CodegenPropertyModel, CodegenModel {
     private final List<CodegenGenericModel> inlineSuperModels = new ArrayList<>();
     private final Set<String> required = new LinkedHashSet<>();
 
-    public void addRefSuperModel(String ref) {
-        refSuperModels.add(new CodegenTypeRef(spec, ref));
+    public void addRefSuperModel(String ref, String relativeFilename) {
+        refSuperModels.add(new CodegenTypeRef(spec, ref, relativeFilename));
     }
 
     public CodegenGenericModel addSuperModel() {
