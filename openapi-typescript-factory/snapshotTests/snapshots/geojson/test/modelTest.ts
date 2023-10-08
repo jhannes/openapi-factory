@@ -1,6 +1,6 @@
 import {
-    GeometryDto,
     GeometryCollectionDto,
+    GeometryDto,
     LineStringDto,
     PointDto,
     PolygonDto,
@@ -69,8 +69,8 @@ export type Factory<T> = {
 type ModelFactory<T> = Factory<T> | ((testData: TestSampleData) => T);
 
 export interface SampleModelFactories {
-    GeometryDto?: ModelFactory<GeometryDto>;
     GeometryCollectionDto?: ModelFactory<GeometryCollectionDto>;
+    GeometryDto?: ModelFactory<GeometryDto>;
     LineStringDto?: ModelFactory<LineStringDto>;
     PointDto?: ModelFactory<PointDto>;
     PolygonDto?: ModelFactory<PolygonDto>;
@@ -266,14 +266,14 @@ export class TestSampleData {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     sample(modelName: string): any {
         switch (modelName) {
-            case "GeometryDto":
-                return this.sampleGeometryDto();
-            case "Array<GeometryDto>":
-                return this.sampleArrayGeometryDto();
             case "GeometryCollectionDto":
                 return this.sampleGeometryCollectionDto();
             case "Array<GeometryCollectionDto>":
                 return this.sampleArrayGeometryCollectionDto();
+            case "GeometryDto":
+                return this.sampleGeometryDto();
+            case "Array<GeometryDto>":
+                return this.sampleArrayGeometryDto();
             case "LineStringDto":
                 return this.sampleLineStringDto();
             case "Array<LineStringDto>":
@@ -289,6 +289,31 @@ export class TestSampleData {
             default:
                 throw new Error("Unknown type " + modelName);
         }
+    }
+
+    sampleGeometryCollectionDto(template?: Factory<GeometryCollectionDto>): GeometryCollectionDto {
+        const containerClass = "GeometryCollectionDto";
+        if (!template && typeof this.sampleModelProperties[containerClass] === "function") {
+            return this.sampleModelProperties[containerClass](this);
+        }
+        return {
+            type: "GeometryCollection",
+            geometries: this.generate(
+                template?.geometries,
+                { containerClass, propertyName: "geometries", example: null, isNullable: false },
+                () => this.sampleArrayGeometryDto()
+            ),
+        };
+    }
+
+    sampleArrayGeometryCollectionDto(
+        length?: number,
+        template?: Factory<GeometryCollectionDto>
+    ): readonly GeometryCollectionDto[] {
+        return this.randomArray(
+            () => this.sampleGeometryCollectionDto(template),
+            length ?? this.arrayLength()
+        );
     }
 
     sampleGeometryDto(
@@ -327,31 +352,6 @@ export class TestSampleData {
     ): readonly GeometryDto[] {
         return this.randomArray(
             () => this.sampleGeometryDto(factory),
-            length ?? this.arrayLength()
-        );
-    }
-
-    sampleGeometryCollectionDto(template?: Factory<GeometryCollectionDto>): GeometryCollectionDto {
-        const containerClass = "GeometryCollectionDto";
-        if (!template && typeof this.sampleModelProperties[containerClass] === "function") {
-            return this.sampleModelProperties[containerClass](this);
-        }
-        return {
-            type: "GeometryCollection",
-            geometries: this.generate(
-                template?.geometries,
-                { containerClass, propertyName: "geometries", example: null, isNullable: false },
-                () => this.sampleArrayGeometryDto()
-            ),
-        };
-    }
-
-    sampleArrayGeometryCollectionDto(
-        length?: number,
-        template?: Factory<GeometryCollectionDto>
-    ): readonly GeometryCollectionDto[] {
-        return this.randomArray(
-            () => this.sampleGeometryCollectionDto(template),
             length ?? this.arrayLength()
         );
     }

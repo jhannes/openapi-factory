@@ -616,18 +616,18 @@ export class TestSampleData {
         if (typeof this.sampleModelProperties[containerClass] === "function") {
             return this.sampleModelProperties[containerClass](this);
         }
-        const delta = this.pickOneString(["AddMessageToConversationDelta", "UpdateConversationDelta", "CreateConversationDelta"])
+        const delta = this.pickOneString(["CreateConversationDelta", "UpdateConversationDelta", "AddMessageToConversationDelta"])
         switch (delta) {
-            case "AddMessageToConversationDelta":
+            case "CreateConversationDelta":
                 return {
-                    ...this.sampleAddMessageToConversationDeltaDto(),
+                    ...this.sampleCreateConversationDeltaDto(),
                     delta,
                 };
             case "UpdateConversationDelta":
                 return this.sampleUpdateConversationDeltaDto();
-            case "CreateConversationDelta":
+            case "AddMessageToConversationDelta":
                 return {
-                    ...this.sampleCreateConversationDeltaDto(),
+                    ...this.sampleAddMessageToConversationDeltaDto(),
                     delta,
                 };
         }

@@ -82,7 +82,7 @@ export interface IdentityClientApiInterface {
      * @throws {HttpError}
      */
     handleCallback(params?: {
-        queryParams?: { state?: string, code?: string, error?: string, error_description?: string, };
+        queryParams?: { state?: string; code?: string; error?: string; error_description?: string };
     } & RequestCallOptions): Promise<void>;
 }
 
@@ -96,7 +96,7 @@ export class IdentityClientApi extends BaseAPI implements IdentityClientApiInter
      * @throws {HttpError}
      */
     public async handleCallback(params?: {
-        queryParams?: { state?: string, code?: string, error?: string, error_description?: string, };
+        queryParams?: { state?: string; code?: string; error?: string; error_description?: string };
     } & RequestCallOptions): Promise<void> {
         return await this.fetch(
             this.url("/callback", {}, params?.queryParams, {}), params
@@ -114,8 +114,8 @@ export interface IdentityProviderApiInterface {
      * @throws {HttpError}
      */
     fetchToken(params: {
-        formParams: { grant_type: GrantTypeDto; code: string; client_id: string; client_secret?: string; redirect_uri?: string; subject_token?: string; audience?: string; };
-        headers?: { "Authorization"?: string, };
+        formParams: { grant_type: GrantTypeDto; code: string; client_id: string; client_secret?: string; redirect_uri?: string; subject_token?: string; audience?: string };
+        headers?: { "Authorization"?: string };
     } & RequestCallOptions): Promise<TokenResponseDto>;
     /**
      *
@@ -123,7 +123,7 @@ export interface IdentityProviderApiInterface {
      * @throws {HttpError}
      */
     getUserinfo(params: {
-        headers: { "Authorization": string, };
+        headers: { "Authorization": string };
     } & RequestCallOptions): Promise<UserinfoDto>;
     /**
      *
@@ -131,7 +131,7 @@ export interface IdentityProviderApiInterface {
      * @throws {HttpError}
      */
     startAuthorization(params: {
-        queryParams: { response_type?: ResponseTypeDto, client_id: string, state?: string, redirect_uri?: string, scope?: string, };
+        queryParams: { response_type?: ResponseTypeDto; client_id: string; state?: string; redirect_uri?: string; scope?: string };
     } & RequestCallOptions): Promise<void>;
 }
 
@@ -145,8 +145,8 @@ export class IdentityProviderApi extends BaseAPI implements IdentityProviderApiI
      * @throws {HttpError}
      */
     public async fetchToken(params: {
-        formParams: { grant_type: GrantTypeDto; code: string; client_id: string; client_secret?: string; redirect_uri?: string; subject_token?: string; audience?: string; };
-        headers?: { "Authorization"?: string, };
+        formParams: { grant_type: GrantTypeDto; code: string; client_id: string; client_secret?: string; redirect_uri?: string; subject_token?: string; audience?: string };
+        headers?: { "Authorization"?: string };
     } & RequestCallOptions): Promise<TokenResponseDto> {
         return await this.fetch(
             this.basePath + "/token",
@@ -167,7 +167,7 @@ export class IdentityProviderApi extends BaseAPI implements IdentityProviderApiI
      * @throws {HttpError}
      */
     public async getUserinfo(params: {
-        headers: { "Authorization": string, };
+        headers: { "Authorization": string };
     } & RequestCallOptions): Promise<UserinfoDto> {
         return await this.fetch(
             this.basePath + "/userinfo", params
@@ -179,7 +179,7 @@ export class IdentityProviderApi extends BaseAPI implements IdentityProviderApiI
      * @throws {HttpError}
      */
     public async startAuthorization(params: {
-        queryParams: { response_type?: ResponseTypeDto, client_id: string, state?: string, redirect_uri?: string, scope?: string, };
+        queryParams: { response_type?: ResponseTypeDto; client_id: string; state?: string; redirect_uri?: string; scope?: string };
     } & RequestCallOptions): Promise<void> {
         return await this.fetch(
             this.url("/authorize", {}, params?.queryParams, {}), params

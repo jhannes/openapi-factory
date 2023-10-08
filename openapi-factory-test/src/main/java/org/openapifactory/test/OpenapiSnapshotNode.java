@@ -16,12 +16,14 @@ import static org.junit.jupiter.api.DynamicTest.dynamicTest;
 public class OpenapiSnapshotNode {
     private final Path spec;
     private final OpenapiFactory factory;
-    private final Path rootDirectory;
+    private final Path snapshotDir;
+    private final Path outputDir;
 
-    public OpenapiSnapshotNode(Path spec, OpenapiFactory factory, Path parent) {
+    public OpenapiSnapshotNode(Path spec, OpenapiFactory factory, Path snapshotRoot, Path outputRoot) {
         this.spec = spec;
         this.factory = factory;
-        rootDirectory = parent;
+        snapshotDir = snapshotRoot.resolve(getModelName());
+        outputDir = outputRoot.resolve(getModelName());
     }
 
     public static DynamicNode create(Path snapshotRoot, OpenapiFactory factory, Path rootDir) throws IOException {
@@ -40,7 +42,7 @@ public class OpenapiSnapshotNode {
     }
 
     public static DynamicNode singleSnapshotTest(Path spec, OpenapiFactory factory, Path rootDir) {
-        return new OpenapiSnapshotNode(spec, factory, rootDir).createTests();
+        return new OpenapiSnapshotNode(spec, factory, rootDir.resolve("snapshots"), rootDir.resolve("output")).createTests();
     }
 
     private DynamicNode createTests() {
@@ -62,11 +64,11 @@ public class OpenapiSnapshotNode {
     }
 
     private Path getSnapshotDir() {
-        return rootDirectory.resolve("snapshots").resolve(getModelName());
+        return snapshotDir;
     }
 
     private Path getOutputDir() {
-        return rootDirectory.resolve("output").resolve(getModelName());
+        return outputDir;
     }
 
     private String getModelName() {

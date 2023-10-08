@@ -20,6 +20,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Comparator;
+import java.util.TreeSet;
 
 import static org.openapifactory.api.StringUtil.indent;
 import static org.openapifactory.api.StringUtil.join;
@@ -44,7 +46,7 @@ public class ModelTsFile implements FileGenerator {
     private String content() {
         var sections = new ArrayList<String>();
         sections.add(TypescriptFragments.documentationSection(spec));
-        for (var model : spec.getModels()) {
+        for (var model : getModels()) {
             sections.add(modelSection(model));
         }
         return String.join("", sections);
@@ -208,4 +210,9 @@ public class ModelTsFile implements FileGenerator {
         return (docString(p.getDescription()) + propertyDefinition(p) + ";").indent(4);
     }
 
+    private Collection<CodegenModel> getModels() {
+        var models = new TreeSet<CodegenModel>(Comparator.comparing(TypescriptFragments::getTypeName));
+        models.addAll(spec.getModels());
+        return models;
+    }
 }

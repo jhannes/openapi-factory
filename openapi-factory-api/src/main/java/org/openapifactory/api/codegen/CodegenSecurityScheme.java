@@ -4,6 +4,10 @@ import lombok.Data;
 
 @Data
 public class CodegenSecurityScheme {
-    private final String name;
-    private String type;
+    public enum Location {
+        cookie, header, query
+    }
+    private final String key;
+    private String type, name;
+    private Location in;
 }

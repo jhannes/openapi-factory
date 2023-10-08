@@ -8,15 +8,18 @@ import org.openapifactory.api.codegen.CodegenParameter;
 import org.openapifactory.api.codegen.CodegenResponse;
 import org.openapifactory.api.codegen.CodegenSecurity;
 import org.openapifactory.api.codegen.OpenapiSpec;
+import org.openapifactory.api.codegen.types.CodegenModel;
 import org.openapifactory.typescript.TypescriptFragments;
 
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
+import java.util.TreeSet;
 import java.util.stream.Collectors;
 
 import static org.openapifactory.api.StringUtil.indent;
@@ -28,7 +31,6 @@ import static org.openapifactory.typescript.TypescriptFragments.getPropName;
 import static org.openapifactory.typescript.TypescriptFragments.getRequestTypeName;
 import static org.openapifactory.typescript.TypescriptFragments.getResponseTypeName;
 import static org.openapifactory.typescript.TypescriptFragments.getTypeName;
-import static org.openapifactory.typescript.TypescriptFragments.propertiesDefinition;
 
 public class ApiTsFile implements FileGenerator {
 
@@ -61,9 +63,11 @@ public class ApiTsFile implements FileGenerator {
     }
 
     protected String importSection() {
+        var models = new TreeSet<CodegenModel>(Comparator.comparing(TypescriptFragments::getTypeName));
+        models.addAll(spec.getModels());
         return "\n" +
                "import {\n" +
-               indent(4, spec.getModels(), m ->
+               indent(4, models, m ->
                        getTypeName(m) + ",\n" +
                        (m.hasWriteOnlyProperties() ? (getResponseTypeName(m) + ",\n") : "" )+
                        (m.hasReadOnlyProperties() ? (getRequestTypeName(m) + ",\n") : "")
@@ -158,7 +162,9 @@ public class ApiTsFile implements FileGenerator {
             var p = op.getRequestBody();
             var propName = p.isFormContent() ? "formParams" : TypescriptFragments.variableName(p.getSchema());
             params += propName +
-                      (p.isRequired() && p.getSchema().hasNoRequiredProperties() ? "" : "?") +
+                      // Commented out for backwards compatibility
+                      //(p.isRequired() && p.getSchema().hasNoRequiredProperties() ? "" : "?") +
+                      ((p.isRequired() || p.isFormContent()) ? "" : "?") +
                       ": " + getRequestTypeName(p.getSchema()) +
                       ";\n";
         }
@@ -230,16 +236,16 @@ public class ApiTsFile implements FileGenerator {
     private static String paramsDefinition(String paramName, List<CodegenParameter> params) {
         return paramName +
                (params.stream().noneMatch(CodegenParameter::isRequired) ? "?" : "") + ": { " +
-               propertiesDefinition(params) +
-               ", };\n";
+               join("; ", params, TypescriptFragments::propertyDefinition) +
+               " };\n";
     }
 
     private static String paramsDefinitionWithQuotes(String paramName, List<CodegenParameter> params) {
         return paramName +
                (params.stream().noneMatch(CodegenParameter::isRequired) ? "?" : "") + ": { " +
-               join(", ", params, p ->
+               join("; ", params, p ->
                        '"' + getPropName(p) + '"' + (p.isRequired() ? "" : "?") + ": " + getTypeName(p.getSchema())) +
-               ", };\n";
+               " };\n";
     }
 
     private static String getQueryOptions(CodegenParameter p) {
@@ -306,6 +312,6 @@ public class ApiTsFile implements FileGenerator {
                         }
                     }
                 }
-                """.formatted(scheme.getName()));
+                """.formatted(scheme.getKey()));
     }
 }

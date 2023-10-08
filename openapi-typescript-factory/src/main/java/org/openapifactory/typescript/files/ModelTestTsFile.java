@@ -13,12 +13,15 @@ import org.openapifactory.api.codegen.types.CodegenModel;
 import org.openapifactory.api.codegen.types.CodegenOneOfModel;
 import org.openapifactory.api.codegen.types.CodegenPrimitiveSchema;
 import org.openapifactory.api.codegen.types.CodegenRecordSchema;
+import org.openapifactory.typescript.TypescriptFragments;
 
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
+import java.util.TreeSet;
 import java.util.stream.Collectors;
 
 import static org.openapifactory.api.StringUtil.indent;
@@ -50,8 +53,9 @@ public class ModelTestTsFile implements FileGenerator {
     }
 
     private String importSection() {
+        var models = getModels();
         return "import {\n" +
-               lines(spec.getModels(), m ->
+               lines(models, m ->
                        getTypeName(m) + "," + (m instanceof CodegenEnumModel ? "\n" + getTypeName(m) + "Values," : "")
                        + importInlineEnumValues(m)
                ).indent(4) + "} from \"../model\";\n\n";
@@ -168,7 +172,7 @@ public class ModelTestTsFile implements FileGenerator {
                     isNullable?: boolean;
                 }
 
-                """.formatted(indent(4, spec.getModels(), m -> getTypeName(m) + "?: ModelFactory<" + getTypeName(m) + ">;\n"));
+                """.formatted(indent(4, getModels(), m -> getTypeName(m) + "?: ModelFactory<" + getTypeName(m) + ">;\n"));
 
     }
 
@@ -355,7 +359,7 @@ public class ModelTestTsFile implements FileGenerator {
         return "// eslint-disable-next-line @typescript-eslint/no-explicit-any\n" +
                "sample(modelName: string): any {\n" +
                "    switch (modelName) {\n" +
-               indent(8, spec.getModels(), m ->
+               indent(8, getModels(), m ->
                        "case \"" + getTypeName(m) + "\":\n" +
                        "    return this.sample" + getTypeName(m) + "();\n" +
                        "case \"Array<" + getTypeName(m) + ">\":\n" +
@@ -368,7 +372,7 @@ public class ModelTestTsFile implements FileGenerator {
     }
 
     private String modelFactoryFunctions() {
-        return join(spec.getModels(), this::singleModelFactoryFunctions);
+        return join(getModels(), this::singleModelFactoryFunctions);
     }
 
     private String singleModelFactoryFunctions(CodegenModel model) {
@@ -546,5 +550,11 @@ public class ModelTestTsFile implements FileGenerator {
                "        length ?? this.arrayLength()\n" +
                "    );\n" +
                "}";
+    }
+
+    private TreeSet<CodegenModel> getModels() {
+        var models = new TreeSet<CodegenModel>(Comparator.comparing(TypescriptFragments::getTypeName));
+        models.addAll(spec.getModels());
+        return models;
     }
 }

@@ -115,7 +115,7 @@ public class JsonMappingNode implements SpecMappingNode {
     }
 
     private <T> Maybe<T> missingKey(String key) {
-        return Maybe.missing("required " + key + " in " + path);
+        return Maybe.missing("required " + key + " in " + getPath());
     }
 
     private List<String> appendToPath(String key) {

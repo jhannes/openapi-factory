@@ -14,7 +14,7 @@ public class FocusedTest {
 
     @TestFactory
     Stream<DynamicNode> typescriptApi() {
-        Path spec = Paths.get("../snapshotTests/fakerestapi.link");
+        var spec = Paths.get("../snapshotTests/conversations.yaml");
         return Stream.of(singleSnapshotTest(spec, createFactory(), Path.of("snapshotTests")));
     }
 

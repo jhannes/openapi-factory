@@ -52,15 +52,15 @@ export interface CreateConversationDeltaDto {
 }
 
 export type DeltaDto =
-    { delta: "AddMessageToConversationDelta" } & AddMessageToConversationDeltaDto |
+    { delta: "CreateConversationDelta" } & CreateConversationDeltaDto |
     UpdateConversationDeltaDto |
-    { delta: "CreateConversationDelta" } & CreateConversationDeltaDto;
+    { delta: "AddMessageToConversationDelta" } & AddMessageToConversationDeltaDto;
 
 export const DeltaDtoDiscriminators = [
-    "AddMessageToConversationDelta",
+    "CreateConversationDelta",
     "UpdateConversationTitleDelta",
     "UpdateConversationSummaryDelta",
-    "CreateConversationDelta",
+    "AddMessageToConversationDelta",
 ] as const;
 
 export type DeltaDtoDiscriminator = typeof DeltaDtoDiscriminators[number];

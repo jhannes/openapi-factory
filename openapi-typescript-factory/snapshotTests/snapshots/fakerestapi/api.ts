@@ -44,7 +44,7 @@ export interface ActivitiesApiInterface {
      * @throws {HttpError}
      */
     apiV1ActivitiesIdDelete(params: {
-        pathParams: { id: number, };
+        pathParams: { id: number };
     } & RequestCallOptions): Promise<void>;
     /**
      *
@@ -52,7 +52,7 @@ export interface ActivitiesApiInterface {
      * @throws {HttpError}
      */
     apiV1ActivitiesIdGet(params: {
-        pathParams: { id: number, };
+        pathParams: { id: number };
     } & RequestCallOptions): Promise<ActivityDto>;
     /**
      *
@@ -60,7 +60,7 @@ export interface ActivitiesApiInterface {
      * @throws {HttpError}
      */
     apiV1ActivitiesIdPut(params: {
-        pathParams: { id: number, };
+        pathParams: { id: number };
         activityDto?: ActivityDto;
     } & RequestCallOptions): Promise<ActivityDto>;
     /**
@@ -92,7 +92,7 @@ export class ActivitiesApi extends BaseAPI implements ActivitiesApiInterface {
      * @throws {HttpError}
      */
     public async apiV1ActivitiesIdDelete(params: {
-        pathParams: { id: number, };
+        pathParams: { id: number };
     } & RequestCallOptions): Promise<void> {
         return await this.fetch(
             this.url("/api/v1/Activities/{id}", params.pathParams),
@@ -108,7 +108,7 @@ export class ActivitiesApi extends BaseAPI implements ActivitiesApiInterface {
      * @throws {HttpError}
      */
     public async apiV1ActivitiesIdGet(params: {
-        pathParams: { id: number, };
+        pathParams: { id: number };
     } & RequestCallOptions): Promise<ActivityDto> {
         return await this.fetch(
             this.url("/api/v1/Activities/{id}", params.pathParams), params
@@ -120,7 +120,7 @@ export class ActivitiesApi extends BaseAPI implements ActivitiesApiInterface {
      * @throws {HttpError}
      */
     public async apiV1ActivitiesIdPut(params: {
-        pathParams: { id: number, };
+        pathParams: { id: number };
         activityDto?: ActivityDto;
     } & RequestCallOptions): Promise<ActivityDto> {
         return await this.fetch(
@@ -169,7 +169,7 @@ export interface AuthorsApiInterface {
      * @throws {HttpError}
      */
     apiV1AuthorsAuthorsBooksIdBookGet(params: {
-        pathParams: { idBook: number, };
+        pathParams: { idBook: number };
     } & RequestCallOptions): Promise<Array<AuthorDto>>;
     /**
      *
@@ -182,7 +182,7 @@ export interface AuthorsApiInterface {
      * @throws {HttpError}
      */
     apiV1AuthorsIdDelete(params: {
-        pathParams: { id: number, };
+        pathParams: { id: number };
     } & RequestCallOptions): Promise<void>;
     /**
      *
@@ -190,7 +190,7 @@ export interface AuthorsApiInterface {
      * @throws {HttpError}
      */
     apiV1AuthorsIdGet(params: {
-        pathParams: { id: number, };
+        pathParams: { id: number };
     } & RequestCallOptions): Promise<AuthorDto>;
     /**
      *
@@ -198,7 +198,7 @@ export interface AuthorsApiInterface {
      * @throws {HttpError}
      */
     apiV1AuthorsIdPut(params: {
-        pathParams: { id: number, };
+        pathParams: { id: number };
         authorDto?: AuthorDto;
     } & RequestCallOptions): Promise<AuthorDto>;
     /**
@@ -221,7 +221,7 @@ export class AuthorsApi extends BaseAPI implements AuthorsApiInterface {
      * @throws {HttpError}
      */
     public async apiV1AuthorsAuthorsBooksIdBookGet(params: {
-        pathParams: { idBook: number, };
+        pathParams: { idBook: number };
     } & RequestCallOptions): Promise<Array<AuthorDto>> {
         return await this.fetch(
             this.url("/api/v1/Authors/authors/books/{idBook}", params.pathParams), params
@@ -242,7 +242,7 @@ export class AuthorsApi extends BaseAPI implements AuthorsApiInterface {
      * @throws {HttpError}
      */
     public async apiV1AuthorsIdDelete(params: {
-        pathParams: { id: number, };
+        pathParams: { id: number };
     } & RequestCallOptions): Promise<void> {
         return await this.fetch(
             this.url("/api/v1/Authors/{id}", params.pathParams),
@@ -258,7 +258,7 @@ export class AuthorsApi extends BaseAPI implements AuthorsApiInterface {
      * @throws {HttpError}
      */
     public async apiV1AuthorsIdGet(params: {
-        pathParams: { id: number, };
+        pathParams: { id: number };
     } & RequestCallOptions): Promise<AuthorDto> {
         return await this.fetch(
             this.url("/api/v1/Authors/{id}", params.pathParams), params
@@ -270,7 +270,7 @@ export class AuthorsApi extends BaseAPI implements AuthorsApiInterface {
      * @throws {HttpError}
      */
     public async apiV1AuthorsIdPut(params: {
-        pathParams: { id: number, };
+        pathParams: { id: number };
         authorDto?: AuthorDto;
     } & RequestCallOptions): Promise<AuthorDto> {
         return await this.fetch(
@@ -324,7 +324,7 @@ export interface BooksApiInterface {
      * @throws {HttpError}
      */
     apiV1BooksIdDelete(params: {
-        pathParams: { id: number, };
+        pathParams: { id: number };
     } & RequestCallOptions): Promise<void>;
     /**
      *
@@ -332,7 +332,7 @@ export interface BooksApiInterface {
      * @throws {HttpError}
      */
     apiV1BooksIdGet(params: {
-        pathParams: { id: number, };
+        pathParams: { id: number };
     } & RequestCallOptions): Promise<BookDto>;
     /**
      *
@@ -340,7 +340,7 @@ export interface BooksApiInterface {
      * @throws {HttpError}
      */
     apiV1BooksIdPut(params: {
-        pathParams: { id: number, };
+        pathParams: { id: number };
         bookDto?: BookDto;
     } & RequestCallOptions): Promise<void>;
     /**
@@ -372,7 +372,7 @@ export class BooksApi extends BaseAPI implements BooksApiInterface {
      * @throws {HttpError}
      */
     public async apiV1BooksIdDelete(params: {
-        pathParams: { id: number, };
+        pathParams: { id: number };
     } & RequestCallOptions): Promise<void> {
         return await this.fetch(
             this.url("/api/v1/Books/{id}", params.pathParams),
@@ -388,7 +388,7 @@ export class BooksApi extends BaseAPI implements BooksApiInterface {
      * @throws {HttpError}
      */
     public async apiV1BooksIdGet(params: {
-        pathParams: { id: number, };
+        pathParams: { id: number };
     } & RequestCallOptions): Promise<BookDto> {
         return await this.fetch(
             this.url("/api/v1/Books/{id}", params.pathParams), params
@@ -400,7 +400,7 @@ export class BooksApi extends BaseAPI implements BooksApiInterface {
      * @throws {HttpError}
      */
     public async apiV1BooksIdPut(params: {
-        pathParams: { id: number, };
+        pathParams: { id: number };
         bookDto?: BookDto;
     } & RequestCallOptions): Promise<void> {
         return await this.fetch(
@@ -449,7 +449,7 @@ export interface CoverPhotosApiInterface {
      * @throws {HttpError}
      */
     apiV1CoverPhotosBooksCoversIdBookGet(params: {
-        pathParams: { idBook: number, };
+        pathParams: { idBook: number };
     } & RequestCallOptions): Promise<Array<CoverPhotoDto>>;
     /**
      *
@@ -462,7 +462,7 @@ export interface CoverPhotosApiInterface {
      * @throws {HttpError}
      */
     apiV1CoverPhotosIdDelete(params: {
-        pathParams: { id: number, };
+        pathParams: { id: number };
     } & RequestCallOptions): Promise<void>;
     /**
      *
@@ -470,7 +470,7 @@ export interface CoverPhotosApiInterface {
      * @throws {HttpError}
      */
     apiV1CoverPhotosIdGet(params: {
-        pathParams: { id: number, };
+        pathParams: { id: number };
     } & RequestCallOptions): Promise<CoverPhotoDto>;
     /**
      *
@@ -478,7 +478,7 @@ export interface CoverPhotosApiInterface {
      * @throws {HttpError}
      */
     apiV1CoverPhotosIdPut(params: {
-        pathParams: { id: number, };
+        pathParams: { id: number };
         coverPhotoDto?: CoverPhotoDto;
     } & RequestCallOptions): Promise<CoverPhotoDto>;
     /**
@@ -501,7 +501,7 @@ export class CoverPhotosApi extends BaseAPI implements CoverPhotosApiInterface {
      * @throws {HttpError}
      */
     public async apiV1CoverPhotosBooksCoversIdBookGet(params: {
-        pathParams: { idBook: number, };
+        pathParams: { idBook: number };
     } & RequestCallOptions): Promise<Array<CoverPhotoDto>> {
         return await this.fetch(
             this.url("/api/v1/CoverPhotos/books/covers/{idBook}", params.pathParams), params
@@ -522,7 +522,7 @@ export class CoverPhotosApi extends BaseAPI implements CoverPhotosApiInterface {
      * @throws {HttpError}
      */
     public async apiV1CoverPhotosIdDelete(params: {
-        pathParams: { id: number, };
+        pathParams: { id: number };
     } & RequestCallOptions): Promise<void> {
         return await this.fetch(
             this.url("/api/v1/CoverPhotos/{id}", params.pathParams),
@@ -538,7 +538,7 @@ export class CoverPhotosApi extends BaseAPI implements CoverPhotosApiInterface {
      * @throws {HttpError}
      */
     public async apiV1CoverPhotosIdGet(params: {
-        pathParams: { id: number, };
+        pathParams: { id: number };
     } & RequestCallOptions): Promise<CoverPhotoDto> {
         return await this.fetch(
             this.url("/api/v1/CoverPhotos/{id}", params.pathParams), params
@@ -550,7 +550,7 @@ export class CoverPhotosApi extends BaseAPI implements CoverPhotosApiInterface {
      * @throws {HttpError}
      */
     public async apiV1CoverPhotosIdPut(params: {
-        pathParams: { id: number, };
+        pathParams: { id: number };
         coverPhotoDto?: CoverPhotoDto;
     } & RequestCallOptions): Promise<CoverPhotoDto> {
         return await this.fetch(
@@ -604,7 +604,7 @@ export interface UsersApiInterface {
      * @throws {HttpError}
      */
     apiV1UsersIdDelete(params: {
-        pathParams: { id: number, };
+        pathParams: { id: number };
     } & RequestCallOptions): Promise<void>;
     /**
      *
@@ -612,7 +612,7 @@ export interface UsersApiInterface {
      * @throws {HttpError}
      */
     apiV1UsersIdGet(params: {
-        pathParams: { id: number, };
+        pathParams: { id: number };
     } & RequestCallOptions): Promise<void>;
     /**
      *
@@ -620,7 +620,7 @@ export interface UsersApiInterface {
      * @throws {HttpError}
      */
     apiV1UsersIdPut(params: {
-        pathParams: { id: number, };
+        pathParams: { id: number };
         userDto?: UserDto;
     } & RequestCallOptions): Promise<void>;
     /**
@@ -652,7 +652,7 @@ export class UsersApi extends BaseAPI implements UsersApiInterface {
      * @throws {HttpError}
      */
     public async apiV1UsersIdDelete(params: {
-        pathParams: { id: number, };
+        pathParams: { id: number };
     } & RequestCallOptions): Promise<void> {
         return await this.fetch(
             this.url("/api/v1/Users/{id}", params.pathParams),
@@ -668,7 +668,7 @@ export class UsersApi extends BaseAPI implements UsersApiInterface {
      * @throws {HttpError}
      */
     public async apiV1UsersIdGet(params: {
-        pathParams: { id: number, };
+        pathParams: { id: number };
     } & RequestCallOptions): Promise<void> {
         return await this.fetch(
             this.url("/api/v1/Users/{id}", params.pathParams), params
@@ -680,7 +680,7 @@ export class UsersApi extends BaseAPI implements UsersApiInterface {
      * @throws {HttpError}
      */
     public async apiV1UsersIdPut(params: {
-        pathParams: { id: number, };
+        pathParams: { id: number };
         userDto?: UserDto;
     } & RequestCallOptions): Promise<void> {
         return await this.fetch(

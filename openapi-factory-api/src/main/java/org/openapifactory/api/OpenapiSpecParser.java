@@ -6,6 +6,7 @@ import org.openapifactory.api.codegen.CodegenOperation;
 import org.openapifactory.api.codegen.CodegenParameter;
 import org.openapifactory.api.codegen.CodegenProp;
 import org.openapifactory.api.codegen.CodegenObjectSchema;
+import org.openapifactory.api.codegen.CodegenSecurityScheme;
 import org.openapifactory.api.codegen.CodegenXml;
 import org.openapifactory.api.codegen.OpenapiSpec;
 import org.openapifactory.api.codegen.types.CodegenAnonymousObjectModel;
@@ -225,6 +226,7 @@ public class OpenapiSpecParser {
 
         if (operationNode.containsKey("requestBody")) {
             var requestBody = operationNode.mappingNode("requestBody").required();
+            var description = requestBody.string("description");
             var content = requestBody.mappingNode("content").required();
             for (var contentType : content.keySet()) {
                 var codegenContent = operation.addRequestBody(contentType);
@@ -288,6 +290,9 @@ public class OpenapiSpecParser {
                     var schemeNode = securitySchemesNode.mappingNode(scheme).required();
                     var securityScheme = spec.addSecurityScheme(scheme);
                     securityScheme.setType(schemeNode.string("type").required());
+                    schemeNode.string("name").ifPresent(securityScheme::setName);
+                    schemeNode.getEnum("in", CodegenSecurityScheme.Location.class).ifPresent(securityScheme::setIn);
+                    schemeNode.mappingNode("flows"); // TODO: Used for oauth2 security schemes
                     schemeNode.checkUnused();
                 }
             }

@@ -88,9 +88,9 @@ components:
 
     Delta:
       oneOf:
-        - $ref: "#/components/schemas/AddMessageToConversationDelta"
-        - $ref: "#/components/schemas/UpdateConversationDelta"
         - $ref: "#/components/schemas/CreateConversationDelta"
+        - $ref: "#/components/schemas/UpdateConversationDelta"
+        - $ref: "#/components/schemas/AddMessageToConversationDelta"
       discriminator:
         propertyName: delta
 

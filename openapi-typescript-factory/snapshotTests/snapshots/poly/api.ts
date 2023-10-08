@@ -53,7 +53,7 @@ export interface DefaultApiInterface {
      * @throws {HttpError}
      */
     partiesIdPut(params: {
-        pathParams: { id: string, };
+        pathParams: { id: string };
         anyPartyDto?: AnyPartyDto;
     } & RequestCallOptions): Promise<void>;
     /**
@@ -106,7 +106,7 @@ export class DefaultApi extends BaseAPI implements DefaultApiInterface {
      * @throws {HttpError}
      */
     public async partiesIdPut(params: {
-        pathParams: { id: string, };
+        pathParams: { id: string };
         anyPartyDto?: AnyPartyDto;
     } & RequestCallOptions): Promise<void> {
         return await this.fetch(

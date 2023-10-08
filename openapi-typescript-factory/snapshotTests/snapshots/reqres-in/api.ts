@@ -67,7 +67,7 @@ export interface DefaultApiInterface {
      * @throws {HttpError}
      */
     usersGet(params?: {
-        queryParams?: { page?: number, per_page?: number, };
+        queryParams?: { page?: number; per_page?: number };
     } & RequestCallOptions): Promise<UsersGet200ResponseDto>;
     /**
      *
@@ -76,7 +76,7 @@ export interface DefaultApiInterface {
      * @throws {HttpError}
      */
     usersIdDelete(params: {
-        pathParams: { id: number, };
+        pathParams: { id: number };
     } & RequestCallOptions): Promise<void>;
     /**
      *
@@ -85,7 +85,7 @@ export interface DefaultApiInterface {
      * @throws {HttpError}
      */
     usersIdGet(params: {
-        pathParams: { id: number, };
+        pathParams: { id: number };
     } & RequestCallOptions): Promise<UsersIdGet200ResponseDto>;
     /**
      *
@@ -94,7 +94,7 @@ export interface DefaultApiInterface {
      * @throws {HttpError}
      */
     usersIdPatch(params: {
-        pathParams: { id: number, };
+        pathParams: { id: number };
     } & RequestCallOptions): Promise<UsersIdPatch200ResponseDto>;
     /**
      *
@@ -103,7 +103,7 @@ export interface DefaultApiInterface {
      * @throws {HttpError}
      */
     usersIdPut(params: {
-        pathParams: { id: number, };
+        pathParams: { id: number };
     } & RequestCallOptions): Promise<UsersIdPut200ResponseDto>;
 }
 
@@ -176,7 +176,7 @@ export class DefaultApi extends BaseAPI implements DefaultApiInterface {
      * @throws {HttpError}
      */
     public async usersGet(params?: {
-        queryParams?: { page?: number, per_page?: number, };
+        queryParams?: { page?: number; per_page?: number };
     } & RequestCallOptions): Promise<UsersGet200ResponseDto> {
         return await this.fetch(
             this.url("/users", {}, params?.queryParams, {}), params
@@ -189,7 +189,7 @@ export class DefaultApi extends BaseAPI implements DefaultApiInterface {
      * @throws {HttpError}
      */
     public async usersIdDelete(params: {
-        pathParams: { id: number, };
+        pathParams: { id: number };
     } & RequestCallOptions): Promise<void> {
         return await this.fetch(
             this.url("/users/{id}", params.pathParams),
@@ -206,7 +206,7 @@ export class DefaultApi extends BaseAPI implements DefaultApiInterface {
      * @throws {HttpError}
      */
     public async usersIdGet(params: {
-        pathParams: { id: number, };
+        pathParams: { id: number };
     } & RequestCallOptions): Promise<UsersIdGet200ResponseDto> {
         return await this.fetch(
             this.url("/users/{id}", params.pathParams), params
@@ -219,7 +219,7 @@ export class DefaultApi extends BaseAPI implements DefaultApiInterface {
      * @throws {HttpError}
      */
     public async usersIdPatch(params: {
-        pathParams: { id: number, };
+        pathParams: { id: number };
     } & RequestCallOptions): Promise<UsersIdPatch200ResponseDto> {
         return await this.fetch(
             this.url("/users/{id}", params.pathParams),
@@ -236,7 +236,7 @@ export class DefaultApi extends BaseAPI implements DefaultApiInterface {
      * @throws {HttpError}
      */
     public async usersIdPut(params: {
-        pathParams: { id: number, };
+        pathParams: { id: number };
     } & RequestCallOptions): Promise<UsersIdPut200ResponseDto> {
         return await this.fetch(
             this.url("/users/{id}", params.pathParams),

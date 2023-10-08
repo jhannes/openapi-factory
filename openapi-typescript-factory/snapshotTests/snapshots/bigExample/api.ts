@@ -33,7 +33,7 @@ export interface DefaultApiInterface {
      * @throws {HttpError}
      */
     addPet(params: {
-        pathParams: { storeId: string, };
+        pathParams: { storeId: string };
         petDto?: PetDto;
     } & RequestCallOptions): Promise<void>;
     /**
@@ -42,8 +42,8 @@ export interface DefaultApiInterface {
      * @throws {HttpError}
      */
     addPetWithForm(params: {
-        pathParams: { petId: string, };
-        formParams?: { name?: string; status?: string; };
+        pathParams: { petId: string };
+        formParams: { name?: string; status?: string };
     } & RequestCallOptions): Promise<void>;
     /**
      *
@@ -56,8 +56,8 @@ export interface DefaultApiInterface {
      * @throws {HttpError}
      */
     listPets(params: {
-        pathParams: { storeId: string, };
-        queryParams?: { status?: Array<string>, tags?: Array<string>, bornAfter?: Date, };
+        pathParams: { storeId: string };
+        queryParams?: { status?: Array<string>; tags?: Array<string>; bornAfter?: Date };
     } & RequestCallOptions): Promise<PetDto>;
 }
 
@@ -71,7 +71,7 @@ export class DefaultApi extends BaseAPI implements DefaultApiInterface {
      * @throws {HttpError}
      */
     public async addPet(params: {
-        pathParams: { storeId: string, };
+        pathParams: { storeId: string };
         petDto?: PetDto;
     } & RequestCallOptions): Promise<void> {
         return await this.fetch(
@@ -93,8 +93,8 @@ export class DefaultApi extends BaseAPI implements DefaultApiInterface {
      * @throws {HttpError}
      */
     public async addPetWithForm(params: {
-        pathParams: { petId: string, };
-        formParams?: { name?: string; status?: string; };
+        pathParams: { petId: string };
+        formParams: { name?: string; status?: string };
     } & RequestCallOptions): Promise<void> {
         return await this.fetch(
             this.url("/pets/{petId}", params.pathParams),
@@ -124,8 +124,8 @@ export class DefaultApi extends BaseAPI implements DefaultApiInterface {
      * @throws {HttpError}
      */
     public async listPets(params: {
-        pathParams: { storeId: string, };
-        queryParams?: { status?: Array<string>, tags?: Array<string>, bornAfter?: Date, };
+        pathParams: { storeId: string };
+        queryParams?: { status?: Array<string>; tags?: Array<string>; bornAfter?: Date };
     } & RequestCallOptions): Promise<PetDto> {
         return await this.fetch(
             this.url("/{storeId}/pets", params.pathParams, params?.queryParams, {

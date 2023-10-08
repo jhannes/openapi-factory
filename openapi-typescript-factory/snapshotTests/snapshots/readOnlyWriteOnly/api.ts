@@ -48,7 +48,7 @@ export interface DefaultApiInterface {
      * @throws {HttpError}
      */
     usersIdGet(params: {
-        pathParams: { id: number, };
+        pathParams: { id: number };
     } & RequestCallOptions): Promise<UserDtoResponse>;
     /**
      *
@@ -100,7 +100,7 @@ export class DefaultApi extends BaseAPI implements DefaultApiInterface {
      * @throws {HttpError}
      */
     public async usersIdGet(params: {
-        pathParams: { id: number, };
+        pathParams: { id: number };
     } & RequestCallOptions): Promise<UserDtoResponse> {
         return await this.fetch(
             this.url("/users/{id}", params.pathParams), params

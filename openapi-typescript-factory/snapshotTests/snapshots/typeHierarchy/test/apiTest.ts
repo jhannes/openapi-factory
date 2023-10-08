@@ -17,10 +17,10 @@ import {
     DogDto,
     GenericDogDto,
     GoldfishDto,
-    PetDto,
     PetBaseDto,
-    WorkingDogDto,
+    PetDto,
     WorkingDogCapabilityDto,
+    WorkingDogDto,
 } from "../model";
 
 import {

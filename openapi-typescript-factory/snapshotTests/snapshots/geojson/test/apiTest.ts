@@ -12,8 +12,8 @@
  */
 
 import {
-    GeometryDto,
     GeometryCollectionDto,
+    GeometryDto,
     LineStringDto,
     PointDto,
     PolygonDto,

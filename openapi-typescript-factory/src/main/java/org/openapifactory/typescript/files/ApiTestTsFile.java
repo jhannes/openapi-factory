@@ -3,12 +3,15 @@ package org.openapifactory.typescript.files;
 import org.openapifactory.api.FileGenerator;
 import org.openapifactory.api.codegen.CodegenApi;
 import org.openapifactory.api.codegen.OpenapiSpec;
+import org.openapifactory.api.codegen.types.CodegenModel;
 import org.openapifactory.typescript.TypescriptFragments;
 
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Comparator;
 import java.util.List;
+import java.util.TreeSet;
 
 import static org.openapifactory.api.StringUtil.join;
 import static org.openapifactory.api.StringUtil.lines;
@@ -44,9 +47,11 @@ public class ApiTestTsFile implements FileGenerator {
     }
 
     private String importSection() {
+        var models = new TreeSet<CodegenModel>(Comparator.comparing(TypescriptFragments::getTypeName));
+        models.addAll(spec.getModels());
         return ("\n" +
                 "import {\n" +
-                lines(spec.getModels(), m -> getTypeName(m) + ",").indent(4) +
+                lines(models, m -> getTypeName(m) + ",").indent(4) +
                 "} from \"../model\";\n" +
                 "\n" +
                 "import {\n" +

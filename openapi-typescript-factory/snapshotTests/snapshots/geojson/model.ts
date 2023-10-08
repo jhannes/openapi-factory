@@ -10,6 +10,14 @@
  * Do not edit the class manually.
  */
 
+/**
+ * GeoJSon geometry collection
+ */
+export interface GeometryCollectionDto {
+    type: "GeometryCollection";
+    geometries: Array<GeometryDto>;
+}
+
 export type GeometryDto =
     { type: "Point" } & PointDto |
     { type: "LineString" } & LineStringDto |
@@ -22,14 +30,6 @@ export const GeometryDtoDiscriminators = [
 ] as const;
 
 export type GeometryDtoDiscriminator = typeof GeometryDtoDiscriminators[number];
-
-/**
- * GeoJSon geometry collection
- */
-export interface GeometryCollectionDto {
-    type: "GeometryCollection";
-    geometries: Array<GeometryDto>;
-}
 
 export interface LineStringDto {
     type: "LineString";

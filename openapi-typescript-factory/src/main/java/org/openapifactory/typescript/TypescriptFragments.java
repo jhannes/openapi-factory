@@ -1,7 +1,6 @@
 package org.openapifactory.typescript;
 
 import org.openapifactory.api.codegen.CodegenApi;
-import org.openapifactory.api.codegen.CodegenParameter;
 import org.openapifactory.api.codegen.CodegenProp;
 import org.openapifactory.api.codegen.CodegenProperty;
 import org.openapifactory.api.codegen.OpenapiSpec;
@@ -15,7 +14,6 @@ import org.openapifactory.api.codegen.types.CodegenRecordSchema;
 import org.openapifactory.api.codegen.types.CodegenSchema;
 import org.openapifactory.api.codegen.types.CodegenSchemaRef;
 
-import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -62,7 +60,7 @@ public class TypescriptFragments {
         } else if (type instanceof CodegenModel model) {
             return model.getName() + "Dto";
         } else if (type instanceof CodegenAnonymousObjectModel objectType) {
-            return "{ " + join("; ", objectType.getProperties().values(), TypescriptFragments::propertyDefinition) + "; }";
+            return "{ " + join("; ", objectType.getAllProperties(), TypescriptFragments::propertyDefinition) + " }";
         } else if (type instanceof CodegenEmbeddedEnumSchema enumModel) {
             if (enumModel.getDeclaredProperty() instanceof CodegenProperty prop) {
                 return getTypeName(prop.getModel()) + toUpperCamelCase(prop.getName()) + "Enum";
@@ -83,13 +81,6 @@ public class TypescriptFragments {
         } else {
             throw new IllegalArgumentException("Not supported " + type);
         }
-    }
-
-    public static String propertiesDefinition(List<CodegenParameter> parameters) {
-        return parameters
-                .stream()
-                .map(TypescriptFragments::propertyDefinition)
-                .collect(Collectors.joining(", "));
     }
 
     public static String documentationSection(OpenapiSpec spec) {
