@@ -10,13 +10,13 @@ import java.util.regex.Pattern;
 @ToString
 @Getter
 @EqualsAndHashCode(of = {"ref"})
-public class CodegenTypeRef implements CodegenType {
+public class CodegenSchemaRef implements CodegenSchema {
     public static final Pattern REF_PATTERN = Pattern.compile("#/components/schemas/(?<schema>.*)");
     @ToString.Exclude
     private final OpenapiSpec spec;
     private final String ref;
 
-    public CodegenTypeRef(OpenapiSpec spec, String ref, String relativeFilename) {
+    public CodegenSchemaRef(OpenapiSpec spec, String ref, String relativeFilename) {
         this.spec = spec;
         this.ref = ref.startsWith("#") ? relativeFilename + ref : ref;
 
@@ -48,7 +48,7 @@ public class CodegenTypeRef implements CodegenType {
     }
 
     @Override
-    public CodegenType getReferencedType() {
+    public CodegenSchema getReferencedType() {
         return spec.getModel(this);
     }
 }

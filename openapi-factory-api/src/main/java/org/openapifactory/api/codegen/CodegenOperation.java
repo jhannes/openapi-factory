@@ -3,7 +3,7 @@ package org.openapifactory.api.codegen;
 import lombok.Data;
 import lombok.ToString;
 import org.openapifactory.api.codegen.types.CodegenAnonymousObjectModel;
-import org.openapifactory.api.codegen.types.CodegenType;
+import org.openapifactory.api.codegen.types.CodegenSchema;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -18,7 +18,8 @@ public class CodegenOperation {
     private final OpenapiSpec spec;
     private final String method, path;
     private String operationId;
-    private String summary;
+    private String summary, description;
+    private boolean deprecated;
     private final List<CodegenSecurity> security = new ArrayList<>();
     private final List<CodegenResponse> responses = new ArrayList<>();
 
@@ -111,13 +112,13 @@ public class CodegenOperation {
         return getMethod().equalsIgnoreCase("GET");
     }
 
-    public CodegenType addRequestModel(CodegenAnonymousObjectModel object) {
+    public CodegenSchema addRequestModel(CodegenAnonymousObjectModel object) {
         var namedModel = spec.addGenericModel(toUpperCamelCase(getOperationId()) + "Request");
         object.getProperties().forEach(namedModel.getProperties()::put);
         return namedModel;
     }
 
-    public CodegenType addResponseModel(CodegenAnonymousObjectModel object, int responseCode) {
+    public CodegenSchema addResponseModel(CodegenAnonymousObjectModel object, int responseCode) {
         var namedModel = spec.addGenericModel(toUpperCamelCase(getOperationId()) + responseCode + "Response");
         object.getProperties().forEach(namedModel.getProperties()::put);
         return namedModel;

@@ -1,13 +1,13 @@
 package org.openapifactory.api.codegen;
 
-import org.openapifactory.api.codegen.types.CodegenType;
+import org.openapifactory.api.codegen.types.CodegenSchema;
 
 public interface CodegenProp {
     String getName();
 
     String getDescription();
 
-    CodegenType getType();
+    CodegenSchema getSchema();
 
     boolean isRequired();
 

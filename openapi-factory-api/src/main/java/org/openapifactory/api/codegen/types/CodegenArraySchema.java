@@ -3,9 +3,9 @@ package org.openapifactory.api.codegen.types;
 import lombok.Data;
 
 @Data
-public class CodegenArrayType implements CodegenType {
+public class CodegenArraySchema implements CodegenSchema {
     private boolean uniqueItems;
-    private CodegenType items;
+    private CodegenSchema items;
     private int minItems = 0;
     private Integer maxItems;
 

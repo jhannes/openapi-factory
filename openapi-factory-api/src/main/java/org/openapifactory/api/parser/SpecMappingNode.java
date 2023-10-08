@@ -1,7 +1,7 @@
-package org.openapifactory.api;
+package org.openapifactory.api.parser;
 
-import org.openapifactory.api.json.JsonMappingNode;
-import org.openapifactory.api.yaml.YamlMappingNode;
+import org.openapifactory.api.parser.json.JsonMappingNode;
+import org.openapifactory.api.parser.yaml.YamlMappingNode;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -47,7 +47,12 @@ public interface SpecMappingNode {
 
     Set<String> keySet();
 
+    boolean isObject(String key);
+
     default boolean containsKey(String key) {
         return keySet().contains(key);
     }
+
+    void checkUnused();
+
 }

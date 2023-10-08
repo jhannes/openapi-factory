@@ -5,17 +5,21 @@ import org.openapifactory.api.codegen.CodegenContact;
 import org.openapifactory.api.codegen.CodegenOperation;
 import org.openapifactory.api.codegen.CodegenParameter;
 import org.openapifactory.api.codegen.CodegenProp;
-import org.openapifactory.api.codegen.CodegenPropertyModel;
+import org.openapifactory.api.codegen.CodegenObjectSchema;
+import org.openapifactory.api.codegen.CodegenXml;
 import org.openapifactory.api.codegen.OpenapiSpec;
 import org.openapifactory.api.codegen.types.CodegenAnonymousObjectModel;
-import org.openapifactory.api.codegen.types.CodegenArrayType;
-import org.openapifactory.api.codegen.types.CodegenConstantType;
-import org.openapifactory.api.codegen.types.CodegenEmbeddedEnumType;
+import org.openapifactory.api.codegen.types.CodegenArraySchema;
+import org.openapifactory.api.codegen.types.CodegenConstantSchema;
+import org.openapifactory.api.codegen.types.CodegenEmbeddedEnumSchema;
 import org.openapifactory.api.codegen.types.CodegenModel;
-import org.openapifactory.api.codegen.types.CodegenPrimitiveType;
-import org.openapifactory.api.codegen.types.CodegenRecordType;
-import org.openapifactory.api.codegen.types.CodegenType;
-import org.openapifactory.api.codegen.types.CodegenTypeRef;
+import org.openapifactory.api.codegen.types.CodegenPrimitiveSchema;
+import org.openapifactory.api.codegen.types.CodegenRecordSchema;
+import org.openapifactory.api.codegen.types.CodegenSchema;
+import org.openapifactory.api.codegen.types.CodegenSchemaRef;
+import org.openapifactory.api.parser.Maybe;
+import org.openapifactory.api.parser.SpecMappingNode;
+import org.openapifactory.api.parser.SpecSequenceNode;
 
 import java.io.IOException;
 import java.net.URL;
@@ -73,22 +77,26 @@ public class OpenapiSpecParser {
             if (maybeSchemas.isPresent()) {
                 var schemas = maybeSchemas.required();
                 for (var modelName : schemas.keySet()) {
-                    createModel(spec, modelName, schemas.mappingNode(modelName).required());
+                    var modelNode = schemas.mappingNode(modelName).required();
+                    createModel(spec, modelName, modelNode);
+                    modelNode.checkUnused();
                 }
             }
         }
     }
 
     protected CodegenModel createModel(OpenapiSpec spec, String modelName, SpecMappingNode node) {
+        var type = node.string("type");
         if (node.containsKey("properties")) {
             var generic = spec.addGenericModel(modelName);
             node.string("description").ifPresent(generic::setDescription);
+            node.mappingNode("xml").map(this::readXml).ifPresent(generic::setXml);
             readProperties(node, generic);
             return generic;
         } else if (node.containsKey("enum")) {
             var enumModel = spec.addEnumModel(modelName);
             enumModel.getValues().addAll(node.sequenceNode("enum").required().stringList());
-            enumModel.setType(node.string("type").orElse("string"));
+            enumModel.setType(type.orElse("string"));
             node.string("description").ifPresent(enumModel::setDescription);
             return enumModel;
         } else if (node.containsKey("allOf")) {
@@ -116,16 +124,16 @@ public class OpenapiSpecParser {
                     var mapping = discriminatorNode.mappingNode("mapping").required();
                     for (var mappingKey : mapping.keySet()) {
                         var mappingValue = mapping.string(mappingKey).required();
-                        if (CodegenTypeRef.REF_PATTERN.matcher(mappingValue).matches()) {
-                            oneOf.addMapping(mappingKey, new CodegenTypeRef(oneOf.getSpec(), mappingValue, mapping.getRelativeFilename()));
+                        if (CodegenSchemaRef.REF_PATTERN.matcher(mappingValue).matches()) {
+                            oneOf.addMapping(mappingKey, new CodegenSchemaRef(oneOf.getSpec(), mappingValue, mapping.getRelativeFilename()));
                         } else {
-                            oneOf.addMapping(mappingKey, new CodegenTypeRef(oneOf.getSpec(), "#/components/schemas/" + mappingValue, mapping.getRelativeFilename()));
+                            oneOf.addMapping(mappingKey, new CodegenSchemaRef(oneOf.getSpec(), "#/components/schemas/" + mappingValue, mapping.getRelativeFilename()));
                         }
                     }
                 }
             }
             return oneOf;
-        } else if (node.string("type").filter(s -> s.equals("array"), "").isPresent()) {
+        } else if (type.filter(s -> s.equals("array"), "").isPresent()) {
             var array = spec.addArrayModel(modelName);
             readArrayType(spec, node, array, null);
             node.string("description").ifPresent(array::setDescription);
@@ -135,28 +143,35 @@ public class OpenapiSpecParser {
         }
     }
 
-    protected void readProperties(SpecMappingNode node, CodegenPropertyModel model) {
+    protected void readProperties(SpecMappingNode node, CodegenObjectSchema model) {
         var required = node.sequenceNode("required")
                 .map(SpecSequenceNode::stringList)
                 .orElse(List.of());
+        if (node.containsKey("additionalProperties")) {
+            if (!node.isObject("additionalProperties")) {
+                model.setAdditionalPropertiesFlag(node.getBoolean("additionalProperties").required());
+            }
+        }
         var properties = node.mappingNode("properties").required();
         for (var name : properties.keySet()) {
-            createProperty(model, name, required, properties);
+            var propNode = properties.mappingNode(name).required();
+            createProperty(model, name, required, propNode);
+            propNode.checkUnused();
         }
     }
 
-    private void createProperty(CodegenPropertyModel model, String name, List<String> required, SpecMappingNode properties) {
+    private void createProperty(CodegenObjectSchema model, String name, List<String> required, SpecMappingNode propNode) {
         var prop = model.addProperty(name);
         if (required.contains(name)) {
             prop.setRequired(true);
         }
-        var propNode = properties.mappingNode(name).required();
-        prop.setDescription(propNode.string("description").orNull());
-        prop.setExample(propNode.string("example").orNull());
-        prop.setType(getType(prop.getSpec(), propNode, prop));
-        prop.setReadOnly(propNode.getBoolean("readOnly").orElse(false));
-        prop.setWriteOnly(propNode.getBoolean("writeOnly").orElse(false));
-        prop.setNullable(propNode.getBoolean("nullable").orElse(false));
+        propNode.string("description").ifPresent(prop::setDescription);
+        propNode.string("example").ifPresent(prop::setExample);
+        prop.setSchema(getSchema(prop.getSpec(), propNode, prop));
+        propNode.getBoolean("readOnly").ifPresent(prop::setReadOnly);
+        propNode.getBoolean("writeOnly").ifPresent(prop::setWriteOnly);
+        propNode.getBoolean("nullable").ifPresent(prop::setNullable);
+        propNode.mappingNode("xml").map(this::readXml).ifPresent(prop::setXml);
     }
 
     protected void readPaths(SpecMappingNode paths, OpenapiSpec spec) {
@@ -184,18 +199,22 @@ public class OpenapiSpecParser {
                         .orElse(List.of("default"));
 
                 var operation = spec.createOperation(method, pathExpression);
+                operationNode.string("description").ifPresent(operation::setDescription);
                 operation.getParameters().addAll(commonParameters);
                 readCodegenOperation(operationNode, operation);
                 for (var tag : tags) {
                     spec.addOperation(tag, operation);
                 }
+                operationNode.checkUnused();
             }
+            pathNode.checkUnused();
         }
     }
 
     private void readCodegenOperation(SpecMappingNode operationNode, CodegenOperation operation) {
         operationNode.string("operationId").ifPresent(operation::setOperationId);
         operationNode.string("summary").ifPresent(operation::setSummary);
+        operationNode.getBoolean("deprecated").ifPresent(operation::setDeprecated);
         var parameters = operationNode.sequenceNode("parameters");
         if (parameters.isPresent()) {
             for (var parameter : parameters.required().mappingNodes()) {
@@ -211,13 +230,14 @@ public class OpenapiSpecParser {
                 var codegenContent = operation.addRequestBody(contentType);
                 codegenContent.setRequired(requestBody.getBoolean("required").orElse(false));
                 var schema = (content.mappingNode(contentType).required()).mappingNode("schema").required();
-                var requestType = getType(operation.getSpec(), schema, null);
+                var requestType = getSchema(operation.getSpec(), schema, null);
                 if (!codegenContent.isFormContent() && requestType instanceof CodegenAnonymousObjectModel object) {
-                    codegenContent.setType(operation.addRequestModel(object));
+                    codegenContent.setSchema(operation.addRequestModel(object));
                 } else {
-                    codegenContent.setType(requestType);
+                    codegenContent.setSchema(requestType);
                 }
             }
+            requestBody.checkUnused();
         }
         if (operationNode.containsKey("responses")) {
             var responses = operationNode.mappingNode("responses").required();
@@ -229,12 +249,13 @@ public class OpenapiSpecParser {
                     for (var contentType : content.keySet()) {
                         var codegenContent = response.addResponseType(contentType);
                         var schema = content.mappingNode(contentType).required().mappingNode("schema").required();
-                        var responseType = getType(operation.getSpec(), schema, null);
-                        if (responseType instanceof CodegenAnonymousObjectModel object) {
-                            codegenContent.setType(operation.addResponseModel(object, Integer.parseInt(o)));
+                        var responseSchema = getSchema(operation.getSpec(), schema, null);
+                        if (responseSchema instanceof CodegenAnonymousObjectModel object) {
+                            codegenContent.setSchema(operation.addResponseModel(object, Integer.parseInt(o)));
                         } else {
-                            codegenContent.setType(responseType);
+                            codegenContent.setSchema(responseSchema);
                         }
+                        schema.checkUnused();
                     }
                 }
             }
@@ -255,7 +276,7 @@ public class OpenapiSpecParser {
         parameter.setIn(parameterNode.getEnum("in", CodegenParameter.ParameterLocation.class).required());
         parameter.setExplode(parameterNode.getBoolean("explode").orElse(true));
         parameter.setStyle(parameterNode.getEnum("style", CodegenParameter.Style.class).orNull());
-        parameter.setType(getType(parameter.getSpec(), parameterNode.mappingNode("schema").required(), parameter));
+        parameter.setSchema(getSchema(parameter.getSpec(), parameterNode.mappingNode("schema").required(), parameter));
     }
 
     private void readSecuritySchemes(SpecMappingNode node, OpenapiSpec spec) {
@@ -267,23 +288,24 @@ public class OpenapiSpecParser {
                     var schemeNode = securitySchemesNode.mappingNode(scheme).required();
                     var securityScheme = spec.addSecurityScheme(scheme);
                     securityScheme.setType(schemeNode.string("type").required());
+                    schemeNode.checkUnused();
                 }
             }
         }
     }
 
-
-    protected CodegenType getType(OpenapiSpec spec, SpecMappingNode schema, CodegenProp prop) {
+    protected CodegenSchema getSchema(OpenapiSpec spec, SpecMappingNode schema, CodegenProp prop) {
         if (schema.containsKey("$ref")) {
-            return new CodegenTypeRef(spec, schema.string("$ref").required(), schema.getRelativeFilename());
+            return new CodegenSchemaRef(spec, schema.string("$ref").required(), schema.getRelativeFilename());
         }
+        var maybeType = schema.string("type");
         if (schema.containsKey("enum")) {
             var values = schema.sequenceNode("enum").required().stringList();
             if (values.size() == 1) {
-                return new CodegenConstantType(values.get(0));
+                return new CodegenConstantSchema(values.get(0));
             }
-            var result = new CodegenEmbeddedEnumType();
-            result.setType(schema.string("type").orElse("string"));
+            var result = new CodegenEmbeddedEnumSchema();
+            result.setType(maybeType.orElse("string"));
             result.getValues().addAll(values);
             result.setDeclaredProperty(prop);
             schema.string("description").ifPresent(result::setDescription);
@@ -293,17 +315,17 @@ public class OpenapiSpecParser {
             readProperties(schema, result);
             return result;
         } else if (schema.containsKey("additionalProperties")) {
-            var result = new CodegenRecordType();
-            result.setAdditionalProperties(getType(spec, schema.mappingNode("additionalProperties").required(), prop));
+            var result = new CodegenRecordSchema();
+            result.setAdditionalProperties(getSchema(spec, schema.mappingNode("additionalProperties").required(), prop));
             return result;
         } else {
-            var type = schema.string("type").required();
+            var type = maybeType.required();
             if ("array".equals(type)) {
-                var result = new CodegenArrayType();
+                var result = new CodegenArraySchema();
                 readArrayType(spec, schema, result, prop);
                 return result;
             } else {
-                var result = new CodegenPrimitiveType();
+                var result = new CodegenPrimitiveSchema();
                 result.setType(type);
                 result.setFormat(schema.string("format").orNull());
                 return result;
@@ -311,30 +333,33 @@ public class OpenapiSpecParser {
         }
     }
 
-    protected void readArrayType(OpenapiSpec spec, SpecMappingNode schema, CodegenArrayType result, CodegenProp prop) {
+    protected void readArrayType(OpenapiSpec spec, SpecMappingNode schema, CodegenArraySchema result, CodegenProp prop) {
         result.setUniqueItems(schema.getBoolean("uniqueItems").orElse(false));
-        result.setItems(getType(spec, schema.mappingNode("items").required(), prop));
+        result.setItems(getSchema(spec, schema.mappingNode("items").required(), prop));
         schema.getInt("minItems").ifPresent(result::setMinItems);
         schema.getInt("maxItems").ifPresent(result::setMaxItems);
     }
 
     protected void readInfo(SpecMappingNode infoNode, OpenapiSpec spec) {
-        spec.setTitle(infoNode.string("title").orNull());
+        infoNode.string("title").ifPresent(spec::setTitle);
         spec.setDescription(infoNode.string("description").orElse(DEFAULT_SPEC_DESCRIPTION));
-        spec.setVersion(infoNode.string("version").orNull());
+        infoNode.string("version").ifPresent(spec::setVersion);
+        infoNode.mappingNode("license");
         infoNode.mappingNode("contact").ifPresent(contactNode -> {
                     var contact = new CodegenContact();
                     contact.setName(Objects.toString(contactNode.string("name").orNull()));
                     contact.setEmail(Objects.toString(contactNode.string("email").orNull()));
                     spec.setContact(Optional.of(contact));
+                    contactNode.checkUnused();
                 }
         );
+        infoNode.checkUnused();
     }
 
     protected void resolveExternalReferences(URL baseUrl, OpenapiSpec spec) {
         var specFiles = new HashMap<String, SpecMappingNode>();
-        Set<CodegenTypeRef> unresolvedReferences;
-        while (!(unresolvedReferences = spec.getUnresolvedTypeReferences()).isEmpty()) {
+        Set<CodegenSchemaRef> unresolvedReferences;
+        while (!(unresolvedReferences = spec.getUnresolvedSchemaReferences()).isEmpty()) {
             for (var typeReference : unresolvedReferences) {
                 var matcher = OpenapiSpec.EXTERNAL_REF.matcher(typeReference.getRef());
                 if (matcher.matches()) {
@@ -349,10 +374,21 @@ public class OpenapiSpecParser {
                         }
                     }
                     var resolvedModel = createModel(spec, path[path.length - 1], specNode);
-                    spec.getResolvedModels().put(typeReference, resolvedModel);
+                    spec.getResolvedSchemas().put(typeReference, resolvedModel);
                 }
             }
         }
+    }
+
+    private CodegenXml readXml(SpecMappingNode xmlNode) {
+        var result = new CodegenXml();
+        xmlNode.string("name").ifPresent(result::setName);
+        xmlNode.string("namespace").ifPresent(result::setNamespace);
+        xmlNode.string("prefix").ifPresent(result::setPrefix);
+        xmlNode.getBoolean("attribute").ifPresent(result::setAttribute);
+        xmlNode.getBoolean("wrapped").ifPresent(result::setWrapped);
+        xmlNode.checkUnused();
+        return result;
     }
 
     @SneakyThrows

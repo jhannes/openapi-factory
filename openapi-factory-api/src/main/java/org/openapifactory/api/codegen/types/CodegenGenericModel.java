@@ -4,9 +4,10 @@ import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import lombok.ToString;
-import org.openapifactory.api.Maybe;
+import org.openapifactory.api.codegen.CodegenXml;
+import org.openapifactory.api.parser.Maybe;
 import org.openapifactory.api.codegen.CodegenProperty;
-import org.openapifactory.api.codegen.CodegenPropertyModel;
+import org.openapifactory.api.codegen.CodegenObjectSchema;
 import org.openapifactory.api.codegen.OpenapiSpec;
 
 import java.util.ArrayList;
@@ -17,13 +18,20 @@ import java.util.Map;
 
 @RequiredArgsConstructor
 @ToString
-public class CodegenGenericModel implements CodegenPropertyModel, CodegenModel {
+public class CodegenGenericModel implements CodegenObjectSchema, CodegenModel {
     @ToString.Exclude
     private final OpenapiSpec spec;
     @Getter
     private final String name;
     @Getter @Setter
     private String description;
+
+    @ToString.Exclude
+    @Getter @Setter
+    private CodegenXml xml;
+
+    @Getter @Setter
+    private Boolean additionalPropertiesFlag;
 
     @Getter
     private final Map<String, CodegenProperty> properties = new LinkedHashMap<>();
@@ -58,7 +66,7 @@ public class CodegenGenericModel implements CodegenPropertyModel, CodegenModel {
 
     public List<CodegenProperty> getReferencesWithReadOnlyProperties() {
         return properties.values().stream()
-                .filter(p -> p.getType().hasReadOnlyProperties())
+                .filter(p -> p.getSchema().hasReadOnlyProperties())
                 .toList();
     }
 
@@ -81,7 +89,7 @@ public class CodegenGenericModel implements CodegenPropertyModel, CodegenModel {
 
     public List<CodegenProperty> getReferencesWithWriteOnlyProperties() {
         return properties.values().stream()
-                .filter(p -> p.getType().hasWriteOnlyProperties())
+                .filter(p -> p.getSchema().hasWriteOnlyProperties())
                 .toList();
     }
 

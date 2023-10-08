@@ -2,7 +2,7 @@ package org.openapifactory.api.codegen.types;
 
 import java.util.Collection;
 
-public interface CodegenEnum extends CodegenType {
+public interface CodegenEnum extends CodegenSchema {
     String getType();
 
     Collection<String> getValues();

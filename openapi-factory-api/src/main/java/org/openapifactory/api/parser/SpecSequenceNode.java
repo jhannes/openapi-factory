@@ -1,4 +1,4 @@
-package org.openapifactory.api;
+package org.openapifactory.api.parser;
 
 import java.util.IllegalFormatException;
 import java.util.List;

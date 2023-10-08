@@ -1,6 +1,6 @@
 package org.openapifactory.api.codegen.types;
 
-public interface CodegenType {
+public interface CodegenSchema {
     default boolean hasNoRequiredProperties() {
         return true;
     }
@@ -17,7 +17,7 @@ public interface CodegenType {
         return false;
     }
 
-    default CodegenType getReferencedType() {
+    default CodegenSchema getReferencedType() {
         return this;
     }
 }

@@ -8,7 +8,7 @@ import org.openapifactory.api.codegen.types.CodegenEnumModel;
 import org.openapifactory.api.codegen.types.CodegenGenericModel;
 import org.openapifactory.api.codegen.types.CodegenModel;
 import org.openapifactory.api.codegen.types.CodegenOneOfModel;
-import org.openapifactory.api.codegen.types.CodegenTypeRef;
+import org.openapifactory.api.codegen.types.CodegenSchemaRef;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -33,8 +33,8 @@ public class OpenapiSpec {
     private final Map<String, CodegenApi> apiMap = new TreeMap<>();
     private final Map<String, CodegenModel> modelMap = new LinkedHashMap<>();
     private final List<CodegenSecurityScheme> securitySchemes = new ArrayList<>();
-    private final List<CodegenTypeRef> typeReferences = new ArrayList<>();
-    private final Map<CodegenTypeRef, CodegenModel> resolvedModels = new LinkedHashMap<>();
+    private final List<CodegenSchemaRef> schemaReferences = new ArrayList<>();
+    private final Map<CodegenSchemaRef, CodegenModel> resolvedSchemas = new LinkedHashMap<>();
 
     public Collection<CodegenApi> getApis() {
         return apiMap.values();
@@ -86,9 +86,9 @@ public class OpenapiSpec {
         return securityScheme;
     }
 
-    public CodegenModel getModel(CodegenTypeRef ref) {
-        if (resolvedModels.containsKey(ref)) {
-            return resolvedModels.get(ref);
+    public CodegenModel getModel(CodegenSchemaRef ref) {
+        if (resolvedSchemas.containsKey(ref)) {
+            return resolvedSchemas.get(ref);
         }
         if (!modelMap.containsKey(ref.getClassName())) {
             throw new IllegalArgumentException("Missing $ref " + ref.getClassName() + " in " + modelMap.keySet());
@@ -101,14 +101,14 @@ public class OpenapiSpec {
         return model;
     }
 
-    public void addReference(CodegenTypeRef reference) {
-        this.typeReferences.add(reference);
+    public void addReference(CodegenSchemaRef reference) {
+        this.schemaReferences.add(reference);
     }
 
-    public Set<CodegenTypeRef> getUnresolvedTypeReferences() {
-        var result = new HashSet<>(getTypeReferences());
+    public Set<CodegenSchemaRef> getUnresolvedSchemaReferences() {
+        var result = new HashSet<>(getSchemaReferences());
         result.removeIf(r -> r.getRef().startsWith("#"));
-        result.removeAll(getResolvedModels().keySet());
+        result.removeAll(getResolvedSchemas().keySet());
         return result;
     }
 }

@@ -8,7 +8,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Data
-public class CodegenEmbeddedEnumType implements CodegenEnum {
+public class CodegenEmbeddedEnumSchema implements CodegenEnum {
     private String type;
     @ToString.Exclude
     private CodegenProp declaredProperty;

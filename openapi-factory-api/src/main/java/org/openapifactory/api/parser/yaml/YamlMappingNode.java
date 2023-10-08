@@ -1,8 +1,8 @@
-package org.openapifactory.api.yaml;
+package org.openapifactory.api.parser.yaml;
 
-import org.openapifactory.api.Maybe;
-import org.openapifactory.api.SpecMappingNode;
-import org.openapifactory.api.SpecSequenceNode;
+import org.openapifactory.api.parser.Maybe;
+import org.openapifactory.api.parser.SpecMappingNode;
+import org.openapifactory.api.parser.SpecSequenceNode;
 import org.yaml.snakeyaml.LoaderOptions;
 import org.yaml.snakeyaml.composer.Composer;
 import org.yaml.snakeyaml.nodes.MappingNode;
@@ -16,6 +16,7 @@ import java.io.Reader;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -25,6 +26,7 @@ public class YamlMappingNode implements SpecMappingNode {
     private final List<String> path;
     private final MappingNode mappingNode;
     private final Map<String, Node> nodeMap = new LinkedHashMap<>();
+    private final Set<String> unusedKeys = new HashSet<>();
     private final String relativeFilename;
     private final URL url;
 
@@ -42,6 +44,7 @@ public class YamlMappingNode implements SpecMappingNode {
         for (var nodeTuple : this.mappingNode.getValue()) {
             var keyNode = (ScalarNode) nodeTuple.getKeyNode();
             nodeMap.put(keyNode.getValue(), nodeTuple.getValueNode());
+            unusedKeys.addAll(nodeMap.keySet());
         }
     }
 
@@ -61,7 +64,7 @@ public class YamlMappingNode implements SpecMappingNode {
         if (!containsKey(key)) {
             return missingKey(key);
         }
-        return Maybe.present(new YamlMappingNode(append(path, key), nodeMap.get(key), relativeFilename, url));
+        return Maybe.present(new YamlMappingNode(append(path, key), getNode(key), relativeFilename, url));
     }
 
     @Override
@@ -69,7 +72,7 @@ public class YamlMappingNode implements SpecMappingNode {
         if (!containsKey(key)) {
             return missingKey(key);
         }
-        return Maybe.present(new YamlSequenceNode(append(path, key), nodeMap.get(key), relativeFilename, url));
+        return Maybe.present(new YamlSequenceNode(append(path, key), getNode(key), relativeFilename, url));
     }
 
     @Override
@@ -77,7 +80,7 @@ public class YamlMappingNode implements SpecMappingNode {
         if (!containsKey(key)) {
             return missingKey(key);
         }
-        return asString(nodeMap.get(key));
+        return asString(getNode(key));
     }
 
     private Maybe<String> asString(Node node) {
@@ -95,7 +98,7 @@ public class YamlMappingNode implements SpecMappingNode {
         if (!containsKey(key)) {
             return missingKey(key);
         }
-        var node = nodeMap.get(key);
+        var node = getNode(key);
         return Maybe.present(asEnum(enumType, asString(node).required(), node));
     }
 
@@ -114,8 +117,25 @@ public class YamlMappingNode implements SpecMappingNode {
         return nodeMap.keySet();
     }
 
+    @Override
+    public boolean isObject(String key) {
+        return containsKey(key) && getNode(key) instanceof MappingNode;
+    }
+
+    @Override
+    public void checkUnused() {
+        if (!unusedKeys.isEmpty()) {
+            throw new RuntimeException("Unused keys " + unusedKeys + " in " + getPath() + " " + getFilePath(mappingNode));
+        }
+    }
+
     private <T> Maybe<T> missingKey(String key) {
-        return Maybe.missing("missing required key [" + key + "] (keys: " + nodeMap.keySet() + ") at " +  getPath() + " " + getFilePath(this.mappingNode));
+        return Maybe.missing("missing required key [" + key + "] (keys: " + keySet() + ") at " +  getPath() + " " + getFilePath(mappingNode));
+    }
+
+    private Node getNode(String key) {
+        unusedKeys.remove(key);
+        return nodeMap.get(key);
     }
 
     private static List<String> append(List<String> path, String key) {

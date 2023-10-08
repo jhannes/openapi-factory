@@ -1,7 +1,7 @@
-package org.openapifactory.api.yaml;
+package org.openapifactory.api.parser.yaml;
 
-import org.openapifactory.api.SpecMappingNode;
-import org.openapifactory.api.SpecSequenceNode;
+import org.openapifactory.api.parser.SpecMappingNode;
+import org.openapifactory.api.parser.SpecSequenceNode;
 import org.yaml.snakeyaml.nodes.MappingNode;
 import org.yaml.snakeyaml.nodes.Node;
 import org.yaml.snakeyaml.nodes.ScalarNode;

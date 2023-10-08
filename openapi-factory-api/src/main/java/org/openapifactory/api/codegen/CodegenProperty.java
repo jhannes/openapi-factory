@@ -4,26 +4,28 @@ import lombok.Data;
 import lombok.SneakyThrows;
 import lombok.ToString;
 import org.openapifactory.api.codegen.types.CodegenArrayModel;
-import org.openapifactory.api.codegen.types.CodegenType;
+import org.openapifactory.api.codegen.types.CodegenSchema;
 
 @Data
 public class CodegenProperty implements CodegenProp, Cloneable {
     @ToString.Exclude
     private final OpenapiSpec spec;
     @ToString.Exclude
-    private final CodegenPropertyModel model;
+    private final CodegenObjectSchema model;
     private final String name;
     @ToString.Exclude
-    private CodegenType type;
+    private CodegenSchema schema;
     private String description, example;
     private boolean required, readOnly, writeOnly, nullable;
 
+    @ToString.Exclude
+    private CodegenXml xml;
 
     @Override
     public String getDescription() {
         if (description != null) {
             return description;
-        } else if (type.getReferencedType() instanceof CodegenArrayModel array) {
+        } else if (schema.getReferencedType() instanceof CodegenArrayModel array) {
             return array.getDescription();
         }
         return null;

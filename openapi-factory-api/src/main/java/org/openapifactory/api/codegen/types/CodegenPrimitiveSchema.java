@@ -3,7 +3,7 @@ package org.openapifactory.api.codegen.types;
 import lombok.Data;
 
 @Data
-public class CodegenPrimitiveType implements CodegenType {
+public class CodegenPrimitiveSchema implements CodegenSchema {
     private String type, format;
 
     @Override

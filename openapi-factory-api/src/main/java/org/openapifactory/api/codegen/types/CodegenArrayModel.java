@@ -5,7 +5,7 @@ import lombok.EqualsAndHashCode;
 
 @Data
 @EqualsAndHashCode(callSuper = true)
-public class CodegenArrayModel extends CodegenArrayType implements CodegenModel {
+public class CodegenArrayModel extends CodegenArraySchema implements CodegenModel {
     private final String name;
     private String description;
 }

@@ -3,9 +3,9 @@ package org.openapifactory.api.codegen.types;
 
 import lombok.Data;
 import lombok.ToString;
-import org.openapifactory.api.Maybe;
+import org.openapifactory.api.parser.Maybe;
 import org.openapifactory.api.codegen.CodegenProperty;
-import org.openapifactory.api.codegen.CodegenPropertyModel;
+import org.openapifactory.api.codegen.CodegenObjectSchema;
 import org.openapifactory.api.codegen.OpenapiSpec;
 
 import java.util.Collection;
@@ -13,12 +13,14 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 @Data
-public class CodegenAnonymousObjectModel implements CodegenPropertyModel {
+public class CodegenAnonymousObjectModel implements CodegenObjectSchema {
     @ToString.Exclude
     private final OpenapiSpec spec;
 
     @ToString.Exclude
     private final Map<String, CodegenProperty> properties = new LinkedHashMap<>();
+
+    private Boolean additionalPropertiesFlag;
 
     @Override
     public boolean hasNoRequiredProperties() {

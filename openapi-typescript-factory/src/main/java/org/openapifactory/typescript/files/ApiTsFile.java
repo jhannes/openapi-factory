@@ -156,10 +156,10 @@ public class ApiTsFile implements FileGenerator {
         }
         if (op.getRequestBody() != null) {
             var p = op.getRequestBody();
-            var propName = p.isFormContent() ? "formParams" : TypescriptFragments.variableName(p.getType());
+            var propName = p.isFormContent() ? "formParams" : TypescriptFragments.variableName(p.getSchema());
             params += propName +
-                      (p.isRequired() && p.getType().hasNoRequiredProperties() ? "" : "?") +
-                      ": " + getRequestTypeName(p.getType()) +
+                      (p.isRequired() && p.getSchema().hasNoRequiredProperties() ? "" : "?") +
+                      ": " + getRequestTypeName(p.getSchema()) +
                       ";\n";
         }
         if (!op.getHeaderParams().isEmpty()) {
@@ -217,7 +217,7 @@ public class ApiTsFile implements FileGenerator {
     }
 
     private static String requestBodyExpression(CodegenOperation op, CodegenContent requestBody) {
-        var propName = TypescriptFragments.variableName(requestBody.getType());
+        var propName = TypescriptFragments.variableName(requestBody.getSchema());
         if (requestBody.isFormContent()) {
             return "this.formData(params.formParams)";
         } else if (op.hasOnlyOptionalParams()) {
@@ -238,7 +238,7 @@ public class ApiTsFile implements FileGenerator {
         return paramName +
                (params.stream().noneMatch(CodegenParameter::isRequired) ? "?" : "") + ": { " +
                join(", ", params, p ->
-                       '"' + getPropName(p) + '"' + (p.isRequired() ? "" : "?") + ": " + getTypeName(p.getType())) +
+                       '"' + getPropName(p) + '"' + (p.isRequired() ? "" : "?") + ": " + getTypeName(p.getSchema())) +
                ", };\n";
     }
 
@@ -252,7 +252,7 @@ public class ApiTsFile implements FileGenerator {
         if (!p.isExplode()) {
             options.add("explode: false");
         }
-        if (p.getType().isDate()) {
+        if (p.getSchema().isDate()) {
             options.add("format: \"date\"");
         }
         return p.getName() + ": " + "{ " + String.join(", ", options) + " },\n";
@@ -260,7 +260,7 @@ public class ApiTsFile implements FileGenerator {
 
     private static boolean hasQueryOptions(CodegenParameter p) {
         var processedStyles = Set.of(CodegenParameter.Style.pipeDelimited, CodegenParameter.Style.spaceDelimited);
-        return !p.isExplode() || p.getType().isDate() || (p.getStyle() != null && processedStyles.contains(p.getStyle()));
+        return !p.isExplode() || p.getSchema().isDate() || (p.getStyle() != null && processedStyles.contains(p.getStyle()));
     }
 
     private static String getResponseType(CodegenOperation operation) {
@@ -269,7 +269,7 @@ public class ApiTsFile implements FileGenerator {
         }
         return operation.getResponses().stream()
                 .filter(CodegenResponse::is2xx)
-                .map(o -> o.getContent() == null ? "undefined" : (getResponseTypeName(o.getContent().getType())))
+                .map(o -> o.getContent() == null ? "undefined" : (getResponseTypeName(o.getContent().getSchema())))
                 .collect(Collectors.joining("|"));
     }
 

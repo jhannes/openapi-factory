@@ -2,7 +2,7 @@ package org.openapifactory.api.codegen;
 
 import lombok.Data;
 import lombok.ToString;
-import org.openapifactory.api.codegen.types.CodegenType;
+import org.openapifactory.api.codegen.types.CodegenSchema;
 
 @Data
 public class CodegenContent {
@@ -10,7 +10,7 @@ public class CodegenContent {
     private final OpenapiSpec spec;
     private final String contentType;
     @ToString.Exclude
-    private CodegenType type;
+    private CodegenSchema schema;
     private boolean required;
 
     public boolean isFormContent() {

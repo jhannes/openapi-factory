@@ -1,11 +1,11 @@
-package org.openapifactory.api.json;
+package org.openapifactory.api.parser.json;
 
 import jakarta.json.JsonArray;
 import jakarta.json.JsonNumber;
 import jakarta.json.JsonString;
 import jakarta.json.JsonValue;
-import org.openapifactory.api.SpecMappingNode;
-import org.openapifactory.api.SpecSequenceNode;
+import org.openapifactory.api.parser.SpecMappingNode;
+import org.openapifactory.api.parser.SpecSequenceNode;
 
 import java.util.ArrayList;
 import java.util.IllegalFormatException;

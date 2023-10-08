@@ -1,17 +1,18 @@
-package org.openapifactory.api.json;
+package org.openapifactory.api.parser.json;
 
 import jakarta.json.Json;
 import jakarta.json.JsonNumber;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonString;
 import jakarta.json.JsonValue;
-import org.openapifactory.api.Maybe;
-import org.openapifactory.api.SpecMappingNode;
-import org.openapifactory.api.SpecSequenceNode;
+import org.openapifactory.api.parser.Maybe;
+import org.openapifactory.api.parser.SpecMappingNode;
+import org.openapifactory.api.parser.SpecSequenceNode;
 
 import java.io.Reader;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -20,11 +21,13 @@ public class JsonMappingNode implements SpecMappingNode {
     private final List<String> path;
     private final JsonObject node;
     private final String relativeFilename;
+    private final Set<String> unusedKeys = new HashSet<>();
 
     public JsonMappingNode(List<String> path, JsonObject node, String relativeFilename) {
         this.path = path;
         this.node = node;
         this.relativeFilename = relativeFilename;
+        unusedKeys.addAll(node.keySet());
     }
 
     public static SpecMappingNode read(Reader reader, String relativeFile) {
@@ -45,6 +48,7 @@ public class JsonMappingNode implements SpecMappingNode {
     }
 
     private Maybe<JsonValue> get(String key) {
+        unusedKeys.remove(key);
         return containsKey(key) ? Maybe.present(node.get(key)) : missingKey(key);
     }
 
@@ -53,6 +57,7 @@ public class JsonMappingNode implements SpecMappingNode {
         if (!containsKey(key)) {
             return missingKey(key);
         }
+        unusedKeys.remove(key);
         return Maybe.present(new JsonSequenceNode(appendToPath(key), node.getJsonArray(key), relativeFilename));
     }
 
@@ -66,6 +71,7 @@ public class JsonMappingNode implements SpecMappingNode {
 
     private String getString(String key) {
         var v = node.get(key);
+        unusedKeys.remove(key);
         if (v instanceof JsonString string) {
             return string.getString();
         } else if (v instanceof JsonNumber number) {
@@ -86,11 +92,25 @@ public class JsonMappingNode implements SpecMappingNode {
         return node.keySet();
     }
 
+    @Override
+    public boolean isObject(String key) {
+        return containsKey(key) && node.get(key) instanceof JsonObject;
+    }
+
+    @Override
+    public void checkUnused() {
+        if (!unusedKeys.isEmpty()) {
+            throw new RuntimeException("Unused keys " + unusedKeys + " in " + getPath());
+        }
+    }
+
     private <T extends Enum<T>> T asEnum(Class<T> enumType, String s, String key) {
         try {
             return Enum.valueOf(enumType, s);
         } catch (IllegalArgumentException e) {
-            throw new RuntimeException("Expected key [" + key + "] at " + path + " value " + s + " to be " + Arrays.toString(enumType.getEnumConstants()));
+            throw new RuntimeException(
+                    "expected enum value [" + s + "] to be in " + Arrays.toString(enumType.getEnumConstants()) + " at " + getPath() + "/" + key
+            );
         }
     }
 
@@ -102,5 +122,9 @@ public class JsonMappingNode implements SpecMappingNode {
         var result = new ArrayList<>(path);
         result.add(key);
         return result;
+    }
+
+    private String getPath() {
+        return relativeFilename + "#/" + String.join("/", path);
     }
 }

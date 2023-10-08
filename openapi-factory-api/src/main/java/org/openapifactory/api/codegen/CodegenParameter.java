@@ -2,7 +2,7 @@ package org.openapifactory.api.codegen;
 
 import lombok.Data;
 import lombok.ToString;
-import org.openapifactory.api.codegen.types.CodegenType;
+import org.openapifactory.api.codegen.types.CodegenSchema;
 
 @Data
 public class CodegenParameter implements CodegenProp {
@@ -19,7 +19,7 @@ public class CodegenParameter implements CodegenProp {
     private final String name;
     private String description;
     private boolean required;
-    private CodegenType type;
+    private CodegenSchema schema;
     private ParameterLocation in;
     private Style style;
     private boolean explode = true;
