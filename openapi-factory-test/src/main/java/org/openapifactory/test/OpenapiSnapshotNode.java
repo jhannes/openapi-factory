@@ -26,17 +26,17 @@ public class OpenapiSnapshotNode {
         outputDir = outputRoot.resolve(getModelName());
     }
 
-    public static DynamicNode create(Path snapshotRoot, OpenapiFactory factory, Path rootDir) throws IOException {
-        if (!Files.isDirectory(snapshotRoot)) {
-            return dynamicTest("No snapshots for " + snapshotRoot, () -> {
+    public static DynamicNode create(Path specRoot, OpenapiFactory factory, Path rootDir) throws IOException {
+        if (!Files.isDirectory(specRoot)) {
+            return dynamicTest("No snapshots for " + specRoot, () -> {
             });
         }
         List<Path> list;
-        try (var files = Files.list(snapshotRoot)) {
+        try (var files = Files.list(specRoot)) {
             list = files.toList();
         }
         return dynamicContainer(
-                "Snapshots of " + snapshotRoot,
+                "Snapshots of " + specRoot,
                 list.stream().filter(Files::isRegularFile).map(spec -> singleSnapshotTest(spec, factory, rootDir))
         );
     }

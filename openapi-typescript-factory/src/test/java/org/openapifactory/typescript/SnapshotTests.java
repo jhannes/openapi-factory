@@ -15,13 +15,13 @@ public class SnapshotTests {
     @TestFactory
     Stream<DynamicNode> typescriptApi() throws IOException {
         return Stream.of(
-                snapshotTests(Paths.get("../snapshotTests")),
-                snapshotTests(Paths.get("../localSnapshotTests"))
+                snapshotTests(Paths.get("../snapshotTests"), Path.of("snapshotTests")),
+                snapshotTests(Paths.get("../localSnapshotTests"), Path.of("localSnapshotTests"))
         );
     }
 
-    private DynamicNode snapshotTests(Path snapshotRoot) throws IOException {
-        return OpenapiSnapshotNode.create(snapshotRoot, createFactory(), Path.of("snapshotTests"));
+    private DynamicNode snapshotTests(Path specRoot, Path snapshotRoot) throws IOException {
+        return OpenapiSnapshotNode.create(specRoot, createFactory(), snapshotRoot);
     }
 
     private OpenapiFactory createFactory() {

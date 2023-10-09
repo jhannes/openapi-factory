@@ -17,6 +17,7 @@ public class CodegenProperty implements CodegenProp, Cloneable {
     private CodegenSchema schema;
     private String description, example;
     private boolean required, readOnly, writeOnly, nullable;
+    private Integer maxLength;
 
     @ToString.Exclude
     private CodegenXml xml;

@@ -70,7 +70,7 @@ public class ModelTsFile implements FileGenerator {
 
     private static String enumDeclaration(CodegenEnum enumType) {
         var name = getTypeName(enumType);
-        return "export const " + name + "Values = [\n" +
+        return STR."export const \{name}Values = [\n" +
                indent(4, enumType.getValues(),
                        s -> enumType.isString() ? "\"" + s + "\",\n" : s + ",\n") +
                "] as const;\n" +
