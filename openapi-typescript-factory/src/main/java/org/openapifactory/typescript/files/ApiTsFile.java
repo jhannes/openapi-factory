@@ -7,14 +7,15 @@ import org.openapifactory.api.codegen.CodegenOperation;
 import org.openapifactory.api.codegen.CodegenParameter;
 import org.openapifactory.api.codegen.CodegenResponse;
 import org.openapifactory.api.codegen.CodegenSecurity;
+import org.openapifactory.api.codegen.CodegenServer;
 import org.openapifactory.api.codegen.OpenapiSpec;
+import org.openapifactory.api.codegen.types.CodegenSchema;
 import org.openapifactory.typescript.TypescriptFragments;
 
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -46,54 +47,59 @@ public class ApiTsFile implements FileGenerator {
     }
 
     protected String content() {
-        return String.join("", List.of(
-                eslintSection(),
-                TypescriptFragments.documentationSection(spec),
-                importSection(),
-                apiListSection(),
-                apiSection(),
-                serverSection(),
-                securitySchemeSection()
-        ));
-    }
-
-
-    protected String eslintSection() {
-        return "/* eslint @typescript-eslint/no-unused-vars: off */\n";
-    }
-
-    protected String importSection() {
-        var models = new TreeSet<>(Comparator.comparing(TypescriptFragments::getTypeName));
-        models.addAll(spec.getModels());
-        return STR. """
-
+        return STR."""
+                /* eslint @typescript-eslint/no-unused-vars: off */
+                \{TypescriptFragments.documentationSection(spec)}
                 import {
-                \{ indent(4, models, m ->
-                       getTypeName(m) + ",\n" +
-                       (m.hasWriteOnlyProperties() ? (getResponseTypeName(m) + ",\n") : "") +
-                       (m.hasReadOnlyProperties() ? (getRequestTypeName(m) + ",\n") : "")
-               )}} from "./model";
+                \{ indent(4, getModels(), m -> m + ",\n") }} from "./model";
 
                 import { BaseAPI, RequestCallOptions, SecurityScheme } from "./base";
-                """ ;
-    }
-
-    protected String apiListSection() {
-        return STR."""
 
                 export interface ApplicationApis {
-                \{ lines(spec.getApis(), a -> "    " + toLowerCamelCase(a.getTag()) + "Api: " + getApiName(a) + "Interface;")}
+                \{ lines(spec.getApis(), a -> "    " + toLowerCamelCase(a.getTag()) + "Api: " + getApiName(a) + "Interface;") }
                 }
-                """;
+                \{join(spec.getApis(), api ->
+                        interfaceDefinition(api) +
+                        apiImplementation(api)
+                )}
+                type ServerNames =
+                \{ lines(spec.getServers(), s -> "    | " + "\"" + Objects.toString(s.getDescription(), "default") + "\"") };
+
+                export const servers: Record<ServerNames, ApplicationApis> = {
+                \{ indent(4, spec.getServers(), server ->
+                    (server.getDescription() == null ? "default" : "\"" + server.getDescription() + "\"") + ": {\n" +
+                       indent(4, spec.getApis(), api -> apiInstansiation(server, api)) + "},\n")
+                    }};
+
+                \{join(spec.getSecuritySchemes(), scheme ->
+                        STR. """
+
+                        export class \{ scheme.getKey() } implements SecurityScheme {
+                            constructor(private bearerToken: string) {}
+
+                            headers(): Record<string, string> {
+                                return {
+                                    "Authorization": `Bearer ${this.bearerToken}`,
+                                }
+                            }
+                        }
+                        """
+                )}""";
     }
 
-    protected String apiSection() {
-        var result = new ArrayList<String>();
-        for (var api : spec.getApis()) {
-            result.add(interfaceDefinition(api));
-            result.add(apiImplementation(api));
-        }
-        return String.join("", result);
+
+    private TreeSet<String> getModels() {
+        var models = new TreeSet<String>();
+        spec.getModels().stream().map(TypescriptFragments::getTypeName).forEach(models::add);
+        spec.getModels().stream()
+                .filter(CodegenSchema::hasWriteOnlyProperties)
+                .map(TypescriptFragments::getResponseTypeName)
+                .forEach(models::add);
+        spec.getModels().stream()
+                .filter(CodegenSchema::hasReadOnlyProperties)
+                .map(TypescriptFragments::getRequestTypeName)
+                .forEach(models::add);
+        return models;
     }
 
     private static String interfaceDefinition(CodegenApi api) {
@@ -288,39 +294,8 @@ public class ApiTsFile implements FileGenerator {
                 .collect(Collectors.joining("|"));
     }
 
-    protected String serverSection() {
-        return
-                "\n" +
-                "type ServerNames =\n" +
-                lines(spec.getServers(), s ->
-                        "    | " + "\"" + Objects.toString(s.getDescription(), "default") + "\"") + ";\n" +
-                "\n" +
-                "export const servers: Record<ServerNames, ApplicationApis> = {\n" +
-                indent(4, spec.getServers(),
-                        s -> {
-                            var serverName = s.getDescription() == null ? "default" : "\"" + s.getDescription() + "\"";
-                            return serverName + ": {\n" +
-                                   indent(4, spec.getApis(), api ->
-                                           toLowerCamelCase(api.getTag() + "Api") + ": new " + getApiName(api) + "(\"" + s.getUrl() + "\"),\n") +
-                                   "},\n";
-                        }
-                ) +
-                "};\n" +
-                "\n";
+    private static String apiInstansiation(CodegenServer s, CodegenApi api) {
+        return toLowerCamelCase(api.getTag() + "Api") + ": new " + getApiName(api) + "(\"" + s.getUrl() + "\"),\n";
     }
 
-    protected String securitySchemeSection() {
-        return join(spec.getSecuritySchemes(), scheme -> STR."""
-
-                export class \{scheme.getKey()} implements SecurityScheme {
-                    constructor(private bearerToken: string) {}
-                                    
-                    headers(): Record<string, string> {
-                        return {
-                            "Authorization": `Bearer ${this.bearerToken}`,
-                        }
-                    }
-                }
-                """);
-    }
 }

@@ -13,8 +13,8 @@
 
 import {
     UserDto,
-    UserDtoResponse,
     UserDtoRequest,
+    UserDtoResponse,
     UserPermissionDto,
     UserPermissionDtoRequest,
 } from "./model";
