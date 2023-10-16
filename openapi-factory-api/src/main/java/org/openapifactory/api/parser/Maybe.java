@@ -1,5 +1,6 @@
 package org.openapifactory.api.parser;
 
+import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -34,6 +35,8 @@ public interface Maybe<T> {
     Maybe<T> filter(Predicate<T> predicate, String errorMessage);
 
     Maybe<T> filter(Predicate<T> predicate, Function<T, String> errorMessage);
+
+    Optional<T> optional();
 
 
     class Missing<T> implements Maybe<T> {
@@ -85,6 +88,11 @@ public interface Maybe<T> {
         @Override
         public Maybe<T> filter(Predicate<T> predicate, Function<T, String> errorMessage) {
             return missing(this.errorMessage);
+        }
+
+        @Override
+        public Optional<T> optional() {
+            return Optional.empty();
         }
     }
 
@@ -142,6 +150,11 @@ public interface Maybe<T> {
         @Override
         public Maybe<T> filter(Predicate<T> predicate, Function<T, String > errorMessage) {
             return predicate.test(o) ? this : missing(errorMessage.apply(o));
+        }
+
+        @Override
+        public Optional<T> optional() {
+            return Optional.of(o);
         }
     }
 }

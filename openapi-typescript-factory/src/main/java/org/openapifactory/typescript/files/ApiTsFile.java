@@ -1,13 +1,11 @@
 package org.openapifactory.typescript.files;
 
 import org.openapifactory.api.FileGenerator;
-import org.openapifactory.api.codegen.CodegenApi;
 import org.openapifactory.api.codegen.CodegenContent;
 import org.openapifactory.api.codegen.CodegenOperation;
 import org.openapifactory.api.codegen.CodegenParameter;
 import org.openapifactory.api.codegen.CodegenResponse;
 import org.openapifactory.api.codegen.CodegenSecurity;
-import org.openapifactory.api.codegen.CodegenServer;
 import org.openapifactory.api.codegen.OpenapiSpec;
 import org.openapifactory.api.codegen.types.CodegenSchema;
 import org.openapifactory.typescript.TypescriptFragments;
@@ -17,15 +15,13 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.stream.Collectors;
 
-import static org.openapifactory.api.StringUtil.indent;
+import static org.openapifactory.api.StringUtil.INDENT;
 import static org.openapifactory.api.StringUtil.join;
-import static org.openapifactory.api.StringUtil.lines;
 import static org.openapifactory.api.StringUtil.toLowerCamelCase;
 import static org.openapifactory.typescript.TypescriptFragments.getApiName;
 import static org.openapifactory.typescript.TypescriptFragments.getPropName;
@@ -47,44 +43,66 @@ public class ApiTsFile implements FileGenerator {
     }
 
     protected String content() {
-        return STR."""
+        return INDENT."""
                 /* eslint @typescript-eslint/no-unused-vars: off */
                 \{TypescriptFragments.documentationSection(spec)}
+
                 import {
-                \{ indent(4, getModels(), m -> m + ",\n") }} from "./model";
+                    \{getModels().stream().map(m -> m + ",")}
+                } from "./model";
 
                 import { BaseAPI, RequestCallOptions, SecurityScheme } from "./base";
 
                 export interface ApplicationApis {
-                \{ lines(spec.getApis(), a -> "    " + toLowerCamelCase(a.getTag()) + "Api: " + getApiName(a) + "Interface;") }
+                    \{spec.getApis().stream().map(a -> toLowerCamelCase(a.getTag()) + "Api: " + getApiName(a) + "Interface;")}
                 }
-                \{join(spec.getApis(), api ->
-                        interfaceDefinition(api) +
-                        apiImplementation(api)
+                \{spec.getApis().stream().map(api ->
+                    INDENT. """
+
+                    /**
+                     * \{getApiName(api)} - object-oriented interface
+                     */
+                    export interface \{getApiName(api)}Interface {
+                        \{api.getOperations().stream().map(ApiTsFile::operationDeclaration)}
+                    }
+
+                    /**
+                     * \{getApiName(api)} - object-oriented interface
+                     */
+                    export class \{getApiName(api)} extends BaseAPI implements \{getApiName(api)}Interface {
+                        \{api.getOperations().stream().map(ApiTsFile::operationImplementation)}
+                    }
+                    """
                 )}
+
                 type ServerNames =
-                \{ lines(spec.getServers(), s -> "    | " + "\"" + Objects.toString(s.getDescription(), "default") + "\"") };
+                    \{spec.getServers().stream().map(server -> "| \"" + server.getDescription().orElse("default") + '"')};
 
                 export const servers: Record<ServerNames, ApplicationApis> = {
-                \{ indent(4, spec.getServers(), server ->
-                    (server.getDescription() == null ? "default" : "\"" + server.getDescription() + "\"") + ": {\n" +
-                       indent(4, spec.getApis(), api -> apiInstansiation(server, api)) + "},\n")
-                    }};
+                    \{spec.getServers().stream().map(server ->
+                    INDENT."""
+                    \{server.getDescription().map(s -> '"' + s + '"').orElse("default")}: {
+                        \{spec.getApis().stream().map(api -> toLowerCamelCase(getApiName(api)) + ": new " + getApiName(api) + "(\"" + server.getUrl() + "\"),")}
+                    },
+                    """
+                    )}
+                };
 
-                \{join(spec.getSecuritySchemes(), scheme ->
-                        STR. """
+                \{spec.getSecuritySchemes().stream().map(scheme ->
+                INDENT. """
 
-                        export class \{ scheme.getKey() } implements SecurityScheme {
-                            constructor(private bearerToken: string) {}
+                export class \{ scheme.getKey() } implements SecurityScheme {
+                    constructor(private bearerToken: string) {}
 
-                            headers(): Record<string, string> {
-                                return {
-                                    "Authorization": `Bearer ${this.bearerToken}`,
-                                }
-                            }
+                    headers(): Record<string, string> {
+                        return {
+                            "Authorization": `Bearer ${this.bearerToken}`,
                         }
-                        """
-                )}""";
+                    }
+                }
+                """
+                )}
+                """;
     }
 
 
@@ -102,61 +120,51 @@ public class ApiTsFile implements FileGenerator {
         return models;
     }
 
-    private static String interfaceDefinition(CodegenApi api) {
-        return STR. """
-
-                /**
-                 * \{ getApiName(api) } - object-oriented interface
-                 */
-                export interface \{ getApiName(api) }Interface {
-                \{ indent(4, api.getOperations(), ApiTsFile::operationDeclaration) }}
-                """ ;
-    }
-
     private static String operationDeclaration(CodegenOperation op) {
-        return STR."""
-            /**
-             *
-            \{
-                (Optional.ofNullable(op.getSummary()).map(s -> " * @summary " + s + "\n").orElse(""))
-            }\{
-                (op.hasParams() ? " * @param {*} [params] Request parameters, including pathParams, queryParams (including bodyParams) and http options.\n" : "")
-            } * @throws {HttpError}
-             */
-            \{op.getOperationId()}\{
-                op.hasParams()
-                        ? "(params" + (op.hasOnlyOptionalParams() ? "?" : "") + ": {\n" + operationParameters(op).indent(4) + "} & RequestCallOptions)"
-                        : "(params?: RequestCallOptions)"
-            }: Promise<\{ getResponseType(op) }>;
+        if (op.hasParams()) {
+            return INDENT."""
+            \{operationComment(op)}
+            \{op.getOperationId()}(params\{op.hasOnlyOptionalParams() ? "?" : ""}: {
+                \{ operationParameters(op)  }
+            } & RequestCallOptions): Promise<\{ getResponseType(op) }>;
             """;
-    }
-
-    private static String apiImplementation(CodegenApi api) {
-        return STR."""
-
-                /**
-                 * \{getApiName(api)} - object-oriented interface
-                 */
-                export class \{getApiName(api)} extends BaseAPI implements \{getApiName(api)}Interface {
-                \{indent(4, api.getOperations(), ApiTsFile::operationImplementation)}}
-                """;
+        } else {
+            return INDENT."""
+            \{operationComment(op)}
+            \{op.getOperationId()}(params?: RequestCallOptions): Promise<\{ getResponseType(op) }>;
+            """;
+        }
     }
 
     private static String operationImplementation(CodegenOperation op) {
-        return STR."""
-               /**
-                *
-               \{(op.getSummary() != null ? " * @summary " + op.getSummary() + "\n" : "")
-                }\{(op.hasParams() ? " * @param {*} [params] Request parameters, including pathParams, queryParams (including bodyParams) and http options.\n" : "")
-                } * @throws {HttpError}
-                */
-               public async \{op.getOperationId()}\{
-                (op.hasParams()
-                        ? "(params" + (op.hasOnlyOptionalParams() ? "?" : "") + ": {\n" + operationParameters(op).indent(4) + "} & RequestCallOptions)"
-                        : "(params: RequestCallOptions = {})")
-                }: Promise<\{getResponseType(op)}> {
-               \{functionBody(op, op.getRequestBody()).indent(4)}}
-               """;
+        if (op.hasParams()) {
+            return INDENT."""
+            \{operationComment(op)}
+            public async \{op.getOperationId()}(params\{op.hasOnlyOptionalParams() ? "?" : ""}: {
+                \{ operationParameters(op) }
+            } & RequestCallOptions): Promise<\{ getResponseType(op) }> {
+                \{functionBody(op, op.getRequestBody())}
+            }
+            """;
+        } else {
+            return INDENT."""
+            \{operationComment(op)}
+            public async \{op.getOperationId()}(params: RequestCallOptions = {}): Promise<\{ getResponseType(op) }> {
+                \{functionBody(op, op.getRequestBody())}
+            }
+            """;
+        }
+    }
+
+    private static String operationComment(CodegenOperation op) {
+        return INDENT."""
+                /**
+                 *
+                \{Optional.ofNullable(op.getSummary()).map(s -> " * @summary " + s)}
+                \{op.hasParams() ? " * @param {*} [params] Request parameters, including pathParams, queryParams (including bodyParams) and http options." : null}
+                 * @throws {HttpError}
+                 */
+                """;
     }
 
     private static String operationParameters(CodegenOperation op) {
@@ -188,29 +196,29 @@ public class ApiTsFile implements FileGenerator {
 
     private static String functionBody(CodegenOperation op, CodegenContent requestBody) {
         if (requestBody != null || !op.getSecurity().isEmpty()) {
-            return STR."""
+            return INDENT."""
                    return await this.fetch(
                        \{getFetchExpression(op)},
                        {
                            ...params,
-                   \{(op.isGET() ? "" : "        method: \"" + op.getMethod().toUpperCase() + "\",\n")
-                   }\{(requestBody == null ? "" : "        body: " + requestBodyExpression(op, requestBody) + ",\n")
-                   }        headers: {
+                           \{!op.isGET() ? "method: \"" + op.getMethod().toUpperCase() + "\"," : null}
+                           \{Optional.ofNullable(requestBody).map(body -> "body: " + requestBodyExpression(op, body) + ",")}
+                           headers: {
                                ...this.removeEmpty(params\{op.hasOnlyOptionalParams() ? "?" : ""}.headers),
-                   \{(op.getSecurity().isEmpty() ? "" : "            ...params.security?.headers(),\n")
-                   }\{(requestBody == null ? "" : "            \"Content-Type\": \"" + requestBody.getContentType() + "\",\n")
-                   }        },
+                               \{!op.getSecurity().isEmpty() ? "...params.security?.headers()," : null}
+                               \{Optional.ofNullable(requestBody).map(body -> "\"Content-Type\": \"" + body.getContentType() + "\",")}
+                           },
                        }
                    );
                    """;
         } else if (op.isGET()) {
-            return STR."""
+            return INDENT."""
                    return await this.fetch(
                        \{getFetchExpression(op)}, params
                    );
                    """;
         } else {
-            return STR."""
+            return INDENT."""
                    return await this.fetch(
                        \{getFetchExpression(op)},
                        {
@@ -230,8 +238,9 @@ public class ApiTsFile implements FileGenerator {
                     .filter(ApiTsFile::hasQueryOptions)
                     .map(ApiTsFile::getQueryOptions)
                     .collect(Collectors.joining(""));
-            var queryOptions = queryOptionsLines.isEmpty() ? "{}" : ("{\n" + queryOptionsLines.indent(8) + "    }");
-            return        "this.url(\"" + op.getPath() + "\", " +
+            var queryOptions = queryOptionsLines.isEmpty() ? "{}" : ("{\n" + queryOptionsLines.indent(4) + "}");
+            return
+                    "this.url(\"" + op.getPath() + "\", " +
                     (op.getPathParams().isEmpty() ? "{}" : "params.pathParams") +
                     (op.getQueryParams().isEmpty() ? "" : ", params?.queryParams, " + queryOptions) + ")";
         }
@@ -292,10 +301,6 @@ public class ApiTsFile implements FileGenerator {
                 .filter(CodegenResponse::is2xx)
                 .map(o -> o.getContent() == null ? "undefined" : (getResponseTypeName(o.getContent().getSchema())))
                 .collect(Collectors.joining("|"));
-    }
-
-    private static String apiInstansiation(CodegenServer s, CodegenApi api) {
-        return toLowerCamelCase(api.getTag() + "Api") + ": new " + getApiName(api) + "(\"" + s.getUrl() + "\"),\n";
     }
 
 }

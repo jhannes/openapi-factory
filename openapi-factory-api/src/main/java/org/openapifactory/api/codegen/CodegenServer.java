@@ -2,8 +2,10 @@ package org.openapifactory.api.codegen;
 
 import lombok.Data;
 
+import java.util.Optional;
+
 @Data
 public class CodegenServer {
-    private String description = null;
+    private Optional<String> description = Optional.empty();
     private String url = "";
 }

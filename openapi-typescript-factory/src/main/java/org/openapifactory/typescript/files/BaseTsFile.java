@@ -18,11 +18,11 @@ public class BaseTsFile implements FileGenerator {
     @Override
     public void generate(Path outputRoot) throws IOException {
         Files.writeString(outputRoot.resolve("base.ts"),
-                """
+                STR."""
                 /* eslint @typescript-eslint/no-explicit-any: off */
                                 
                 /* eslint @typescript-eslint/explicit-module-boundary-types: off */
-                %s
+                \{TypescriptFragments.documentationSection(spec)}
                 export interface RequestOptions {
                     mode?: RequestMode;
                     headers?: Record<string, string>;
@@ -222,7 +222,7 @@ public class BaseTsFile implements FileGenerator {
                 export interface SecurityScheme {
                     headers(): Record<string, string>;
                 }
-                """.formatted(TypescriptFragments.documentationSection(spec))
+                """
         );
     }
 }

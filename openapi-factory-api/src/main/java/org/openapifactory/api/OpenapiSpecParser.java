@@ -64,7 +64,7 @@ public class OpenapiSpecParser {
         if (servers.isPresent()) {
             for (var server : servers.required().mappingNodes()) {
                 var codegenServer = spec.addServer();
-                codegenServer.setDescription(server.string("description").orNull());
+                codegenServer.setDescription(server.string("description").optional());
                 codegenServer.setUrl(server.string("url").orNull());
             }
         } else {
