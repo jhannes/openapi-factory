@@ -129,4 +129,8 @@ public class CodegenOperation {
         responses.add(response);
         return response;
     }
+
+    public boolean hasParams() {
+        return !getParameters().isEmpty() || !requestBodies.isEmpty() || !security.isEmpty();
+    }
 }
